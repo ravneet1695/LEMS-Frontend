@@ -1,0 +1,132 @@
+/* Question Editor Styling */
+.container-fluid {
+    max-width: 1400px;
+}
+
+h2 {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+/* Cards */
+.card {
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    font-weight: 600;
+    border-radius: 8px 8px 0 0 !important;
+}
+
+/* Form Controls */
+.form-control,
+.form-select {
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+textarea.form-control {
+    resize: vertical;
+}
+
+/* Image Preview */
+.img-thumbnail {
+    max-height: 150px;
+    object-fit: cover;
+}
+
+.position-relative .btn-danger {
+    opacity: 0.8;
+}
+
+.position-relative:hover .btn-danger {
+    opacity: 1;
+}
+
+/* Input Groups */
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+/* Form Check */
+.form-check-input:checked {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+/* Labels */
+.form-label.fw-bold {
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+/* Small Text */
+small.text-muted {
+    font-size: 0.875rem;
+    color: #6c757d !important;
+}
+
+/* Loading State */
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .col-lg-4 {
+        margin-top: 1rem;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeIn 0.3s ease;
+}

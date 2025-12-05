@@ -1,0 +1,255 @@
+<div class="container-fluid">
+    <!-- Alerts -->
+    <div *ngIf="error" class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+    </div>
+    <div *ngIf="success" class="alert alert-success">
+        <i class="bi bi-check-circle-fill me-2"></i>{{ success }}
+    </div>
+
+
+    <!-- Create/Edit Form -->
+    <div class="card" *ngIf="showForm">
+        <div class="card-header">
+            <i class="bi" [ngClass]="isEditing ? 'bi-pencil-square' : 'bi-plus-circle'"></i>
+            {{ isEditing ? 'Edit Organization' : 'Create New Organization' }}
+        </div>
+        <div class="card-body">
+            <form (ngSubmit)="submitForm()">
+                <!-- Organization Details Section -->
+                <h5 class="section-title">
+                    <i class="bi bi-building"></i>
+                    Organization Details
+                </h5>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="orgName" [(ngModel)]="newOrg.name" name="name"
+                                required placeholder="Organization Name">
+                            <label for="orgName">Organization Name *</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="orgCode" [(ngModel)]="newOrg.code" name="code"
+                                required placeholder="Organization Code" disabled>
+                            <label for="orgCode">Organization Code (Auto-generated)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="orgLogo" class="form-label">
+                                <i class="bi bi-image"></i> Logo Upload *
+                            </label>
+                            <div class="logo-upload-area">
+                                <input type="file" class="form-control" id="orgLogo" (change)="onLogoSelect($event)"
+                                    accept="image/*" [required]="!newOrg.logo">
+                                <small class="text-muted d-block mt-2">
+                                    <i class="bi bi-info-circle"></i> Upload organization logo (PNG, JPG, GIF - Max 5MB)
+                                </small>
+                            </div>
+
+                            <!-- Logo Preview -->
+                            <div *ngIf="logoPreview" class="logo-preview-container">
+                                <img [src]="logoPreview" alt="Logo Preview" class="img-thumbnail">
+                                <button type="button" class="btn btn-sm btn-danger" (click)="removeLogo()">
+                                    <i class="bi bi-x"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            <input type="url" class="form-control" id="orgWebsite" [(ngModel)]="newOrg.websiteUrl"
+                                name="websiteUrl" placeholder="Website URL">
+                            <label for="orgWebsite"><i class="bi bi-globe"></i> Website URL</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            <select class="form-select" id="orgType" [(ngModel)]="newOrg.type" name="type" required>
+                                <option *ngFor="let type of orgTypes" [value]="type">{{ type }}</option>
+                            </select>
+                            <label for="orgType"><i class="bi bi-tag"></i> Organization Type *</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="orgAlias" [(ngModel)]="newOrg.alias"
+                                name="alias" placeholder="Alias">
+                            <label for="orgAlias"><i class="bi bi-bookmark"></i> Alias / Short Name</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <textarea class="form-control" id="orgDesc" [(ngModel)]="newOrg.description" name="description"
+                        placeholder="Description" style="height: 100px"></textarea>
+                    <label for="orgDesc"><i class="bi bi-text-paragraph"></i> Description</label>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- Admin User Section -->
+                <h5 class="section-title">
+                    <i class="bi bi-person-badge"></i>
+                    {{ isEditing ? 'Admin User (Read Only)' : 'Default Admin User' }}
+                </h5>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="adminFirstName"
+                                [(ngModel)]="newOrg.adminDetails.firstName" name="adminFirstName" required
+                                placeholder="First Name" [disabled]="isEditing">
+                            <label for="adminFirstName">First Name *</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="adminLastName"
+                                [(ngModel)]="newOrg.adminDetails.lastName" name="adminLastName" required
+                                placeholder="Last Name" [disabled]="isEditing">
+                            <label for="adminLastName">Last Name *</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            <input type="email" class="form-control" id="adminEmail"
+                                [(ngModel)]="newOrg.adminDetails.email" name="adminEmail" required placeholder="Email"
+                                [disabled]="isEditing">
+                            <label for="adminEmail"><i class="bi bi-envelope"></i> Email *</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6" *ngIf="!isEditing">
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control" id="adminPassword"
+                                [(ngModel)]="newOrg.adminDetails.password" name="adminPassword" required minlength="6"
+                                placeholder="Password">
+                            <label for="adminPassword"><i class="bi bi-lock"></i> Password *</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi" [ngClass]="isEditing ? 'bi-check-circle' : 'bi-plus-circle'"></i>
+                        {{ isEditing ? 'Update' : 'Create Organization & Admin' }}
+                    </button>
+                    <button type="button" class="btn btn-secondary" (click)="toggleForm()">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Organizations Table -->
+    <div class="card">
+        <div class="card-body">
+            <!-- Filters and Actions -->
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2" *ngIf="!showForm">
+                <div class="d-flex gap-2 flex-wrap">
+                    <input type="text" class="form-control form-control-sm" placeholder="Search organizations..."
+                        [(ngModel)]="searchTerm" (input)="applyFilters()" style="width: 200px;">
+                    <select class="form-select form-select-sm" [(ngModel)]="filterType" (change)="applyFilters()"
+                        style="width: 150px;">
+                        <option value="">All Types</option>
+                        <option *ngFor="let type of orgTypes" [value]="type">{{ type }}</option>
+                    </select>
+                    <select class="form-select form-select-sm" [(ngModel)]="filterStatus" (change)="applyFilters()"
+                        style="width: 120px;">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                    <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()"
+                        *ngIf="hasActiveFilters()">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </button>
+                </div>
+                <button class="btn btn-primary btn-sm" (click)="toggleForm()">
+                    <i class="bi bi-plus-circle"></i> Create Organization
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Logo</th>
+                            <th>Organization</th>
+                            <th>Type</th>
+                            <th>Admin</th>
+                            <th>Website</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let org of filteredOrganizations">
+                            <td>
+                                <img [src]="org.logo" [alt]="org.name" class="org-logo"
+                                    onerror="this.src='https://via.placeholder.com/50?text=Logo'">
+                            </td>
+                            <td>
+                                <div class="org-name">{{ org.name }}</div>
+                                <small class="org-code">{{ org.code }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ org.type }}</span>
+                            </td>
+                            <td>
+                                <div>{{ org.admin?.firstName }} {{ org.admin?.lastName }}</div>
+                                <small class="text-muted">{{ org.admin?.email }}</small>
+                            </td>
+                            <td>
+                                <a *ngIf="org.websiteUrl" [href]="org.websiteUrl" target="_blank" class="text-primary">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                                <span *ngIf="!org.websiteUrl" class="text-muted">-</span>
+                            </td>
+                            <td>
+                                <span class="badge" [ngClass]="org.isActive ? 'bg-success' : 'bg-danger'">
+                                    {{ org.isActive ? 'Active' : 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <button class="btn btn-sm btn-info" (click)="editOrganization(org)"
+                                        title="Edit Organization">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" (click)="deleteOrganization(org)"
+                                        title="Delete Organization">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr *ngIf="filteredOrganizations.length === 0">
+                            <td colspan="7">
+                                <div class="empty-state">
+                                    <i class="bi bi-inbox"></i>
+                                    <p class="mb-0">{{ organizations.length === 0 ? 'No organizations found' : 'No
+                                        matching organizations' }}</p>
+                                    <small>{{ organizations.length === 0 ? 'Create your first organization to get
+                                        started' : 'Try adjusting your filters' }}</small>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

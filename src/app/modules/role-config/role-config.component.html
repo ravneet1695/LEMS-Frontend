@@ -1,0 +1,115 @@
+<div class="role-config-container">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">
+                <i class="bi bi-shield-lock"></i>
+                Role & Module Access Configuration
+            </h1>
+            <p class="page-subtitle">Configure which modules each role can access</p>
+        </div>
+        <div class="organization-filter">
+            <label for="orgFilter">Filter by Organization:</label>
+            <select id="orgFilter" class="form-select" [(ngModel)]="selectedOrganization"
+                (change)="onOrganizationChange()">
+                <option [value]="null">All Organizations (Global Roles)</option>
+                <option *ngFor="let org of organizations" [value]="org._id">{{ org.name }}</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="config-layout">
+        <!-- Roles List -->
+        <div class="roles-panel">
+            <div class="panel-header">
+                <div>
+                    <h3>Roles</h3>
+                    <span class="badge">{{ roles.length }}</span>
+                </div>
+            </div>
+
+            <div class="roles-list">
+                <div *ngFor="let role of roles" class="role-item" [class.active]="selectedRole?.id === role.id">
+                    <div class="role-content" (click)="selectRole(role)">
+                        <div class="role-icon">
+                            <i class="bi bi-person-badge"></i>
+                        </div>
+                        <div class="role-info">
+                            <h4>{{ role.displayName }}</h4>
+                            <p>{{ role.description }}</p>
+                            <span class="module-count">{{ role.moduleAccess.length }} modules</span>
+                        </div>
+                        <i class="bi bi-chevron-right"></i>
+                    </div>
+                    <!-- <button *ngIf="!isSystemRole(role)" class="btn-delete" (click)="openDeleteModal(role)"
+                        title="Delete Role">
+                        <i class="bi bi-trash"></i>
+                    </button> -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Module Access Configuration -->
+        <div class="config-panel">
+            <div *ngIf="!selectedRole" class="empty-state">
+                <i class="bi bi-shield-lock"></i>
+                <h3>Select a Role</h3>
+                <p>Choose a role from the left to configure its module access</p>
+            </div>
+
+            <div *ngIf="selectedRole" class="config-content">
+                <div class="config-header">
+                    <div class="role-details">
+                        <h2>{{ selectedRole.displayName }}</h2>
+                        <p>{{ selectedRole.description }}</p>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-outline-secondary" (click)="cancelEdit()">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                        <button class="btn btn-primary" (click)="saveRoleConfig()" [disabled]="loading">
+                            <i class="bi bi-check-circle"></i> Save Changes
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Success/Error Message -->
+                <div *ngIf="saveMessage" class="alert" [class.alert-success]="saveMessageType === 'success'"
+                    [class.alert-danger]="saveMessageType === 'error'">
+                    <i class="bi" [class.bi-check-circle-fill]="saveMessageType === 'success'"
+                        [class.bi-exclamation-triangle-fill]="saveMessageType === 'error'"></i>
+                    {{ saveMessage }}
+                </div>
+
+                <!-- Modules Grid -->
+                <div class="modules-section">
+                    <h3 class="section-title">Module Access Permissions</h3>
+                    <div class="modules-grid">
+                        <div *ngFor="let module of modules" class="module-card"
+                            [class.active]="hasModuleAccess(module.id)" (click)="toggleModuleAccess(module.id)">
+                            <div class="module-header">
+                                <div class="module-icon">
+                                    <i class="bi" [ngClass]="module.icon"></i>
+                                </div>
+                                <div class="module-toggle">
+                                    <label class="switch">
+                                        <input type="checkbox" [checked]="hasModuleAccess(module.id)"
+                                            (click)="$event.stopPropagation()" (change)="toggleModuleAccess(module.id)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="module-content">
+                                <h4>{{ module.name }}</h4>
+                                <p>{{ module.description }}</p>
+                            </div>
+                            <div class="module-status" *ngIf="hasModuleAccess(module.id)">
+                                <i class="bi bi-check-circle-fill"></i>
+                                <span>Enabled</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

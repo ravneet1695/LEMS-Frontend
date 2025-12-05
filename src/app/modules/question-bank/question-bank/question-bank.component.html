@@ -1,0 +1,238 @@
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Question Bank</h2>
+        <div>
+            <button class="btn btn-primary me-2" routerLink="/questions/question-editor">
+                <i class="bi bi-plus-circle"></i> Create Question
+            </button>
+            <button class="btn btn-secondary" routerLink="/questions/bulk-upload">
+                <i class="bi bi-upload"></i> Bulk Upload
+            </button>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div *ngIf="success" class="alert alert-success alert-dismissible fade show">
+        {{ success }}
+        <button type="button" class="btn-close" (click)="success = ''"></button>
+    </div>
+    <div *ngIf="error" class="alert alert-danger alert-dismissible fade show">
+        {{ error }}
+        <button type="button" class="btn-close" (click)="error = ''"></button>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" class="form-control" placeholder="Search questions..." [(ngModel)]="searchTerm"
+                        (keyup.enter)="onSearch()">
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" [(ngModel)]="filterType" (change)="onFilterChange()">
+                        <option value="">All Types</option>
+                        <option *ngFor="let type of questionTypes" [value]="type.value">{{ type.label }}</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" [(ngModel)]="filterDifficulty" (change)="onFilterChange()">
+                        <option value="">All Difficulties</option>
+                        <option *ngFor="let diff of difficulties" [value]="diff">{{ formatDifficulty(diff) }}</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" [(ngModel)]="filterStatus" (change)="onFilterChange()">
+                        <option value="">All Statuses</option>
+                        <option *ngFor="let status of statuses" [value]="status">{{ formatDifficulty(status) }}</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="btn-group w-100">
+                        <button class="btn btn-outline-primary" (click)="onSearch()">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                        <button class="btn btn-outline-secondary" (click)="clearFilters()">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading questions...</p>
+    </div>
+
+    <!-- Questions Table -->
+    <div *ngIf="!loading" class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Question</th>
+                            <th>Type</th>
+                            <th>Marks</th>
+                            <th>Difficulty</th>
+                            <th>Status</th>
+                            <th>Created By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let question of questions">
+                            <td>
+                                <div class="question-text">{{ question.questionText }}</div>
+                                <small class="text-muted" *ngIf="question.hierarchy">
+                                    {{ question.hierarchy.grade }} | {{ question.hierarchy.subject }} | {{
+                                    question.hierarchy.topic }}
+                                </small>
+                            </td>
+                            <td>{{ formatType(question.type) }}</td>
+                            <td>{{ question.marks }}</td>
+                            <td>
+                                <span class="badge" [ngClass]="getDifficultyBadgeClass(question.difficulty)">
+                                    {{ formatDifficulty(question.difficulty) }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge" [ngClass]="getStatusBadgeClass(question.approvalStatus)">
+                                    {{ formatDifficulty(question.approvalStatus) }}
+                                </span>
+                            </td>
+                            <td>
+                                <small *ngIf="question.createdBy">
+                                    {{ question.createdBy.firstName }} {{ question.createdBy.lastName }}
+                                </small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" (click)="viewQuestion(question)"
+                                        title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary" (click)="editQuestion(question)"
+                                        title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button *ngIf="question.approvalStatus === 'pending'"
+                                        class="btn btn-outline-success" (click)="approveQuestion(question._id)"
+                                        title="Approve">
+                                        <i class="bi bi-check-circle"></i>
+                                    </button>
+                                    <button *ngIf="question.approvalStatus === 'pending'"
+                                        class="btn btn-outline-warning" (click)="rejectQuestion(question._id)"
+                                        title="Reject">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" (click)="deleteQuestion(question._id)"
+                                        title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr *ngIf="questions.length === 0">
+                            <td colspan="7" class="text-center py-4">
+                                <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                                <p class="mt-2 text-muted">No questions found</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div *ngIf="totalPages > 1" class="d-flex justify-content-between align-items-center mt-3">
+                <div>
+                    Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize,
+                    totalQuestions) }} of {{ totalQuestions }} questions
+                </div>
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item" [class.disabled]="currentPage === 1">
+                            <a class="page-link" (click)="changePage(currentPage - 1)">Previous</a>
+                        </li>
+                        <li class="page-item" *ngFor="let page of pages" [class.active]="page === currentPage">
+                            <a class="page-link" (click)="changePage(page)">{{ page }}</a>
+                        </li>
+                        <li class="page-item" [class.disabled]="currentPage === totalPages">
+                            <a class="page-link" (click)="changePage(currentPage + 1)">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" [class.show]="showDetailsModal" [style.display]="showDetailsModal ? 'block' : 'none'"
+    tabindex="-1" *ngIf="selectedQuestion">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Question Details</h5>
+                <button type="button" class="btn-close" (click)="closeDetailsModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>Question:</strong>
+                    <p>{{ selectedQuestion.questionText }}</p>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Type:</strong> {{ formatType(selectedQuestion.type) }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Marks:</strong> {{ selectedQuestion.marks }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Difficulty:</strong>
+                        <span class="badge" [ngClass]="getDifficultyBadgeClass(selectedQuestion.difficulty)">
+                            {{ formatDifficulty(selectedQuestion.difficulty) }}
+                        </span>
+                    </div>
+                </div>
+                <div class="mb-3" *ngIf="selectedQuestion.options && selectedQuestion.options.length > 0">
+                    <strong>Options:</strong>
+                    <ul class="list-group mt-2">
+                        <li class="list-group-item" *ngFor="let option of selectedQuestion.options"
+                            [class.list-group-item-success]="option.isCorrect">
+                            {{ option.text }}
+                            <span *ngIf="option.isCorrect" class="badge bg-success float-end">Correct</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="mb-3" *ngIf="selectedQuestion.explanation">
+                    <strong>Explanation:</strong>
+                    <p>{{ selectedQuestion.explanation }}</p>
+                </div>
+                <div class="mb-3" *ngIf="selectedQuestion.hierarchy">
+                    <strong>Hierarchy:</strong>
+                    <p>{{ selectedQuestion.hierarchy.grade }} → {{ selectedQuestion.hierarchy.subject }} → {{
+                        selectedQuestion.hierarchy.topic }}
+                        <span *ngIf="selectedQuestion.hierarchy.subtopic"> → {{ selectedQuestion.hierarchy.subtopic
+                            }}</span>
+                    </p>
+                </div>
+                <div class="mb-3" *ngIf="selectedQuestion.tags && selectedQuestion.tags.length > 0">
+                    <strong>Tags:</strong>
+                    <div class="mt-2">
+                        <span class="badge bg-secondary me-1" *ngFor="let tag of selectedQuestion.tags">{{ tag }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeDetailsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showDetailsModal" *ngIf="showDetailsModal"></div>

@@ -1,124 +1,184 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { Router } from '@angular/router';
-import { environment } from '../../environments/environment';
-import { User, LoginRequest, RegisterRequest, AuthResponse, ApiResponse } from '../models/api.models';
+import { environment } from '../../../environments/environment';
+import { User, LoginRequest, RegisterRequest, AuthResponse } from '../../shared/models/user.model';
 
 @Injectable({
     providedIn: 'root'
 })
 export class AuthService {
-    private currentUserSubject = new BehaviorSubject<User | null>(null);
-    public currentUser$ = this.currentUserSubject.asObservable();
+    private apiUrl = `${environment.apiUrl}/auth`;
+    private currentUserSubject: BehaviorSubject<User | null>;
+    public currentUser: Observable<User | null>;
 
-    private apiUrl = environment.apiUrl;
-
-    constructor(
-        private http: HttpClient,
-        private router: Router
-    ) {
-        this.loadUserFromStorage();
-    }
-
-    private loadUserFromStorage(): void {
-        const userJson = localStorage.getItem(environment.storageKeys.user);
-        if (userJson) {
-            try {
-                const user = JSON.parse(userJson);
-                this.currentUserSubject.next(user);
-            } catch (error) {
-                console.error('Error parsing user from storage', error);
-            }
-        }
-    }
-
-    register(data: RegisterRequest): Observable<ApiResponse> {
-        return this.http.post<ApiResponse>(`${this.apiUrl}/auth/register`, data);
-    }
-
-    login(credentials: LoginRequest): Observable<AuthResponse> {
-        return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, credentials).pipe(
-            tap(response => {
-                if (response.success && response.data) {
-                    this.setSession(response.data);
-                }
-            })
+    constructor(private http: HttpClient) {
+        const storedUser = localStorage.getItem('currentUser');
+        this.currentUserSubject = new BehaviorSubject<User | null>(
+            storedUser ? JSON.parse(storedUser) : null
         );
+        this.currentUser = this.currentUserSubject.asObservable();
     }
 
-    logout(): Observable<ApiResponse> {
-        return this.http.post<ApiResponse>(`${this.apiUrl}/auth/logout`, {}).pipe(
-            tap(() => {
-                this.clearSession();
-                this.router.navigate(['/login']);
-            })
-        );
-    }
-
-    refreshToken(): Observable<AuthResponse> {
-        const refreshToken = this.getRefreshToken();
-        return this.http.post<AuthResponse>(`${this.apiUrl}/auth/refresh-token`, { refreshToken }).pipe(
-            tap(response => {
-                if (response.success && response.data) {
-                    this.setTokens(response.data.accessToken, response.data.refreshToken);
-                }
-            })
-        );
-    }
-
-    getCurrentUser(): Observable<ApiResponse<{ user: User }>> {
-        return this.http.get<ApiResponse<{ user: User }>>(`${this.apiUrl}/auth/me`).pipe(
-            tap(response => {
-                if (response.success && response.data) {
-                    this.currentUserSubject.next(response.data.user);
-                    localStorage.setItem(environment.storageKeys.user, JSON.stringify(response.data.user));
-                }
-            })
-        );
-    }
-
-    private setSession(data: { user: User; accessToken: string; refreshToken: string }): void {
-        localStorage.setItem(environment.storageKeys.accessToken, data.accessToken);
-        localStorage.setItem(environment.storageKeys.refreshToken, data.refreshToken);
-        localStorage.setItem(environment.storageKeys.user, JSON.stringify(data.user));
-        this.currentUserSubject.next(data.user);
-    }
-
-    private setTokens(accessToken: string, refreshToken: string): void {
-        localStorage.setItem(environment.storageKeys.accessToken, accessToken);
-        localStorage.setItem(environment.storageKeys.refreshToken, refreshToken);
-    }
-
-    private clearSession(): void {
-        localStorage.removeItem(environment.storageKeys.accessToken);
-        localStorage.removeItem(environment.storageKeys.refreshToken);
-        localStorage.removeItem(environment.storageKeys.user);
-        this.currentUserSubject.next(null);
-    }
-
-    getAccessToken(): string | null {
-        return localStorage.getItem(environment.storageKeys.accessToken);
-    }
-
-    getRefreshToken(): string | null {
-        return localStorage.getItem(environment.storageKeys.refreshToken);
-    }
-
-    isAuthenticated(): boolean {
-        return !!this.getAccessToken();
-    }
-
-    getCurrentUserValue(): User | null {
+    public get currentUserValue(): User | null {
         return this.currentUserSubject.value;
     }
 
-    hasRole(role: string): boolean {
-        const user = this.getCurrentUserValue();
-        return user?.roles?.some(r => r.name === role) || false;
+    login(credentials: LoginRequest): Observable<AuthResponse> {
+        return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
+            tap(async response => {
+                if (response.success) {
+                    localStorage.setItem('currentUser', JSON.stringify(response.data.user));
+                    localStorage.setItem('token', response.data.token);
+                    localStorage.setItem('refreshToken', response.data.refreshToken);
+                    this.currentUserSubject.next(response.data.user);
+
+                    // Capture and store IP address and location
+                    await this.captureAndStoreLocationData();
+                }
+            })
+        );
     }
 
-    hasAnyRole(roles: string[]): boolean {
-        return roles.some(role => this.hasRole(role));
+    register(data: RegisterRequest): Observable<AuthResponse> {
+        return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data).pipe(
+            tap(response => {
+                if (response.success) {
+                    localStorage.setItem('currentUser', JSON.stringify(response.data.user));
+                    localStorage.setItem('token', response.data.token);
+                    localStorage.setItem('refreshToken', response.data.refreshToken);
+                    this.currentUserSubject.next(response.data.user);
+                }
+            })
+        );
+    }
+
+    logout(): void {
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userIP');
+        localStorage.removeItem('userLocation');
+        this.currentUserSubject.next(null);
+    }
+
+    getToken(): string | null {
+        return localStorage.getItem('token');
+    }
+
+    isAuthenticated(): boolean {
+        return !!this.getToken();
+    }
+
+    hasRole(roles: string[]): boolean {
+        const user = this.currentUserValue;
+        return user ? roles.includes(user.role) : false;
+    }
+
+    getCurrentUser(): User | null {
+        return this.currentUserValue;
+    }
+
+    /**
+     * Capture and store IP address and location data
+     * Called after successful login
+     */
+    private async captureAndStoreLocationData(): Promise<void> {
+        try {
+            // Get IP address from a public API
+            const ipData = await this.getPublicIP();
+            if (ipData) {
+                localStorage.setItem('userIP', ipData.ip);
+                console.log('IP Address stored:', ipData.ip);
+            }
+
+            // Get browser location (city, state)
+            const location = await this.getBrowserLocation();
+            if (location) {
+                localStorage.setItem('userLocation', location);
+                console.log('Location stored:', location);
+            }
+        } catch (error) {
+            console.error('Error capturing location data:', error);
+        }
+    }
+
+    /**
+     * Get public IP address from ipify API
+     */
+    private async getPublicIP(): Promise<{ ip: string } | null> {
+        try {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error getting IP:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Get browser location using Geolocation API
+     */
+    private async getBrowserLocation(): Promise<string | null> {
+        try {
+            // Check if geolocation is supported
+            if (!navigator.geolocation) {
+                return null;
+            }
+
+            // Get coordinates
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: false,
+                    timeout: 5000,
+                    maximumAge: 300000
+                });
+            });
+
+            const { latitude, longitude } = position.coords;
+
+            // Reverse geocode to get city and state
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+                {
+                    headers: {
+                        'User-Agent': 'AuditLogApp/1.0'
+                    }
+                }
+            );
+
+            const data = await response.json();
+            const address = data.address;
+            const city = address.city || address.town || address.village || address.county;
+            const state = address.state || address.region;
+
+            if (city && state) {
+                return `${city}, ${state}`;
+            } else if (city) {
+                return city;
+            } else if (state) {
+                return state;
+            }
+
+            return null;
+        } catch (error) {
+            console.error('Error getting browser location:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Get stored IP address
+     */
+    getStoredIP(): string | null {
+        return localStorage.getItem('userIP');
+    }
+
+    /**
+     * Get stored location
+     */
+    getStoredLocation(): string | null {
+        return localStorage.getItem('userLocation');
     }
 }

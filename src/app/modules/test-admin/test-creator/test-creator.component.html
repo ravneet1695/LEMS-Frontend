@@ -1,0 +1,356 @@
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-file-earmark-plus text-primary"></i>
+                {{ isEditMode ? 'Edit Test' : 'Create New Test' }}
+            </h2>
+            <p class="text-muted mb-0">{{ isEditMode ? 'Update test details and questions' : 'Design and configure your
+                test' }}</p>
+        </div>
+        <div>
+            <button class="btn btn-outline-secondary me-2" (click)="cancel()" [disabled]="saving">
+                <i class="bi bi-x-circle"></i> Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 text-muted">Loading test...</p>
+    </div>
+
+    <!-- Main Content -->
+    <div *ngIf="!loading">
+        <!-- Progress Steps -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="progress-steps">
+                    <div class="step" [class.active]="currentStep === 1" [class.completed]="currentStep > 1">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Basic Info</div>
+                    </div>
+                    <div class="step-line" [class.active]="currentStep > 1"></div>
+                    <div class="step" [class.active]="currentStep === 2" [class.completed]="currentStep > 2">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Questions</div>
+                    </div>
+                    <div class="step-line" [class.active]="currentStep > 2"></div>
+                    <div class="step" [class.active]="currentStep === 3">
+                        <div class="step-number">3</div>
+                        <div class="step-label">Settings</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form [formGroup]="testForm">
+            <!-- Step 1: Basic Information -->
+            <div class="card mb-4" *ngIf="currentStep === 1">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Basic Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Test Title <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" formControlName="title"
+                                    placeholder="Enter test title">
+                                <div class="invalid-feedback"
+                                    *ngIf="testForm.get('title')?.invalid && testForm.get('title')?.touched">
+                                    Test title is required
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Description</label>
+                                <textarea class="form-control" formControlName="description" rows="4"
+                                    placeholder="Enter test description"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Test Type <span class="text-danger">*</span></label>
+                                <select class="form-select" formControlName="type">
+                                    <option value="question_bank">Question Bank</option>
+                                    <option value="pdf_upload">PDF Upload</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Duration (minutes) <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" class="form-control" formControlName="duration" min="1">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Total Marks <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" formControlName="totalMarks" min="1">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Passing Marks <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" class="form-control" formControlName="passingMarks" min="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PDF Upload Section -->
+                    <div *ngIf="testForm.get('type')?.value === 'pdf_upload'" class="mt-4">
+                        <hr>
+                        <h6 class="mb-3">PDF Upload</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Test PDF URL</label>
+                                    <input type="text" class="form-control" formControlName="pdfUrl"
+                                        placeholder="Enter PDF URL">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Answer Key URL</label>
+                                    <input type="text" class="form-control" formControlName="answerKeyUrl"
+                                        placeholder="Enter answer key URL">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-end">
+                    <button type="button" class="btn btn-primary" (click)="nextStep()"
+                        [disabled]="testForm.get('title')?.invalid">
+                        Next <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Questions -->
+            <div class="card mb-4" *ngIf="currentStep === 2 && testForm.get('type')?.value === 'question_bank'">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-question-circle"></i> Select Questions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Question Bank -->
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Available Questions</h6>
+
+                            <!-- Filters -->
+                            <div class="mb-3">
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <input type="text" class="form-control form-control-sm"
+                                            [(ngModel)]="filterGrade" [ngModelOptions]="{standalone: true}"
+                                            (ngModelChange)="loadQuestions()" placeholder="Filter by grade">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="text" class="form-control form-control-sm"
+                                            [(ngModel)]="filterSubject" [ngModelOptions]="{standalone: true}"
+                                            (ngModelChange)="loadQuestions()" placeholder="Filter by subject">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="text" class="form-control form-control-sm"
+                                            [(ngModel)]="filterTopic" [ngModelOptions]="{standalone: true}"
+                                            (ngModelChange)="loadQuestions()" placeholder="Filter by topic">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <select class="form-select form-select-sm" [(ngModel)]="filterDifficulty"
+                                            [ngModelOptions]="{standalone: true}" (ngModelChange)="loadQuestions()">
+                                            <option value="">All Difficulties</option>
+                                            <option value="easy">Easy</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="hard">Hard</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="question-list" style="max-height: 500px; overflow-y: auto;">
+                                <div *ngIf="loadingQuestions" class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                                </div>
+
+                                <div *ngFor="let question of availableQuestions" class="card mb-2">
+                                    <div class="card-body p-2">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <small class="text-muted">{{ question.type }}</small>
+                                                <p class="mb-1 small">{{ question.questionText }}</p>
+                                                <div class="d-flex gap-2">
+                                                    <span class="badge bg-secondary">{{ question.difficulty }}</span>
+                                                    <span class="badge bg-info">{{ question.marks }} marks</span>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                                (click)="addQuestion(question)">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div *ngIf="!loadingQuestions && availableQuestions.length === 0"
+                                    class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1"></i>
+                                    <p class="mt-2">No questions found</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Selected Questions -->
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Selected Questions ({{ selectedQuestions.length }})</h6>
+
+                            <div class="selected-questions" style="max-height: 500px; overflow-y: auto;">
+                                <div *ngFor="let sq of selectedQuestions; let i = index" class="card mb-2">
+                                    <div class="card-body p-2">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                    <span class="badge bg-primary">Q{{ sq.order }}</span>
+                                                    <small class="text-muted">{{
+                                                        getQuestionById(sq.question)?.questionText }}</small>
+                                                </div>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text">Marks</span>
+                                                    <input type="number" class="form-control" [(ngModel)]="sq.marks"
+                                                        [ngModelOptions]="{standalone: true}"
+                                                        (ngModelChange)="updateTotalMarks()" min="1">
+                                                </div>
+                                            </div>
+                                            <div class="btn-group-vertical btn-group-sm ms-2">
+                                                <button type="button" class="btn btn-outline-secondary"
+                                                    (click)="moveQuestionUp(i)" [disabled]="i === 0">
+                                                    <i class="bi bi-arrow-up"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-secondary"
+                                                    (click)="moveQuestionDown(i)"
+                                                    [disabled]="i === selectedQuestions.length - 1">
+                                                    <i class="bi bi-arrow-down"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger"
+                                                    (click)="removeQuestion(i)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div *ngIf="selectedQuestions.length === 0" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1"></i>
+                                    <p class="mt-2">No questions selected</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" (click)="previousStep()">
+                        <i class="bi bi-arrow-left"></i> Previous
+                    </button>
+                    <button type="button" class="btn btn-primary" (click)="nextStep()">
+                        Next <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2 for PDF Upload -->
+            <div class="card mb-4" *ngIf="currentStep === 2 && testForm.get('type')?.value === 'pdf_upload'">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-pdf"></i> PDF Test Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> For PDF-based tests, upload your test PDF and answer key.
+                        Students will download and submit their responses.
+                    </div>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" (click)="previousStep()">
+                        <i class="bi bi-arrow-left"></i> Previous
+                    </button>
+                    <button type="button" class="btn btn-primary" (click)="nextStep()">
+                        Next <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Settings -->
+            <div class="card mb-4" *ngIf="currentStep === 3" formGroupName="settings">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-gear"></i> Test Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Question Settings</h6>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="shuffleQuestions"
+                                    formControlName="shuffleQuestions">
+                                <label class="form-check-label" for="shuffleQuestions">
+                                    Shuffle Questions
+                                </label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="shuffleOptions"
+                                    formControlName="shuffleOptions">
+                                <label class="form-check-label" for="shuffleOptions">
+                                    Shuffle Answer Options
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Result Settings</h6>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="showResultsImmediately"
+                                    formControlName="showResultsImmediately">
+                                <label class="form-check-label" for="showResultsImmediately">
+                                    Show Results Immediately
+                                </label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="allowReview"
+                                    formControlName="allowReview">
+                                <label class="form-check-label" for="allowReview">
+                                    Allow Answer Review
+                                </label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="showCorrectAnswers"
+                                    formControlName="showCorrectAnswers">
+                                <label class="form-check-label" for="showCorrectAnswers">
+                                    Show Correct Answers
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" (click)="previousStep()">
+                        <i class="bi bi-arrow-left"></i> Previous
+                    </button>
+                    <div>
+                        <button type="button" class="btn btn-outline-primary me-2" (click)="saveAsDraft()"
+                            [disabled]="saving || testForm.invalid">
+                            <i class="bi bi-save"></i> {{ saving ? 'Saving...' : 'Save as Draft' }}
+                        </button>
+                        <button type="button" class="btn btn-success" (click)="submitForApproval()"
+                            [disabled]="saving || testForm.invalid">
+                            <i class="bi bi-check-circle"></i> {{ saving ? 'Submitting...' : 'Submit for Approval' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

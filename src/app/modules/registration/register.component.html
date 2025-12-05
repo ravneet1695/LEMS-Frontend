@@ -1,0 +1,126 @@
+<div class="register-wrapper">
+    <div class="register-container">
+        <!-- Left Side - Branding -->
+        <div class="branding-section">
+            <div class="branding-content">
+                <div class="logo-section">
+                    <i class="bi bi-mortarboard-fill"></i>
+                    <h1>Learning Platform</h1>
+                </div>
+                <p class="tagline">Join thousands of learners improving their skills every day</p>
+                <div class="features">
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>Access to premium content</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>Track your progress</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>Earn certificates</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side - Register Form -->
+        <div class="form-section">
+            <div class="form-container">
+                <div class="form-header">
+                    <h2>Create Account</h2>
+                    <p>Sign up to get started</p>
+                </div>
+
+                <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+                    <div class="row">
+                        <!-- First Name -->
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="firstName" placeholder="First Name"
+                                    formControlName="firstName"
+                                    [class.is-invalid]="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched">
+                                <label for="firstName">First Name</label>
+                                <div class="invalid-feedback">First name is required</div>
+                            </div>
+                        </div>
+
+                        <!-- Last Name -->
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="lastName" placeholder="Last Name"
+                                    formControlName="lastName"
+                                    [class.is-invalid]="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched">
+                                <label for="lastName">Last Name</label>
+                                <div class="invalid-feedback">Last name is required</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="form-floating mb-3">
+                        <input type="email" class="form-control" id="email" placeholder="name@example.com"
+                            formControlName="email"
+                            [class.is-invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+                        <label for="email">Email address</label>
+                        <div class="invalid-feedback"
+                            *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+                            <span *ngIf="registerForm.get('email')?.errors?.['required']">Email is required</span>
+                            <span *ngIf="registerForm.get('email')?.errors?.['email']">Please enter a valid email</span>
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-floating mb-3">
+                        <input type="password" class="form-control" id="password" placeholder="Password"
+                            formControlName="password"
+                            [class.is-invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+                        <label for="password">Password</label>
+                        <div class="invalid-feedback">Password must be at least 6 characters</div>
+                    </div>
+
+                    <!-- Role Selection -->
+                    <div class="form-floating mb-3">
+                        <select class="form-select" id="role" formControlName="role">
+                            <option value="learner">Learner</option>
+                            <option value="content_creator">Content Creator</option>
+                            <option value="manager">Manager</option>
+                        </select>
+                        <label for="role">Select Role</label>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div class="alert alert-danger alert-modern" *ngIf="errorMessage">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>{{ errorMessage }}</span>
+                    </div>
+
+                    <!-- Success Message -->
+                    <div class="alert alert-success alert-modern" *ngIf="successMessage">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>{{ successMessage }}</span>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary btn-register"
+                        [disabled]="registerForm.invalid || loading">
+                        <span *ngIf="!loading">Create Account</span>
+                        <span *ngIf="loading">
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Creating account...
+                        </span>
+                    </button>
+
+                    <!-- Login Link -->
+                    <div class="login-link">
+                        <p>
+                            Already have an account?
+                            <a routerLink="/auth/login">Sign in</a>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

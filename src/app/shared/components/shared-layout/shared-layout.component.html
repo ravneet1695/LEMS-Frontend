@@ -1,0 +1,115 @@
+<div class="layout-wrapper" [class.sidebar-collapsed]="sidebarCollapsed">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-container" *ngIf="!sidebarCollapsed">
+                <!-- Expanded View -->
+                <div class="org-branding">
+                    <img *ngIf="user?.organization?.logo" [src]="'http://localhost:5003' + user.organization.logo"
+                        alt="Logo" class="org-logo-expanded">
+                    <div class="org-details">
+                        <span class="org-name-text" *ngIf="user?.organization">
+                            {{ user.organization.name }}
+                        </span>
+                        <span class="org-name-text" *ngIf="!user?.organization">
+                            Admin Panel
+                        </span>
+                        <span class="org-tagline" *ngIf="user?.organization">
+                            {{ user.organization.code }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="logo-container" *ngIf="sidebarCollapsed">
+                <!-- Collapsed View -->
+                <img *ngIf="user?.organization?.logo" [src]="'http://localhost:5003' + user.organization.logo"
+                    alt="Logo" class="org-logo-collapsed">
+                <i *ngIf="!user?.organization?.logo" class="bi bi-building collapsed-icon"></i>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ng-container *ngFor="let item of navigationItems">
+                <div *ngIf="hasAccess(item)" [class.hidden]="!hasAccess(item)">
+                    <!-- Item with children (dropdown) -->
+                    <div *ngIf="item.children && item.children.length > 0" class="nav-item-wrapper">
+                        <a href="#" (click)="toggleDropdown(item.label); $event.preventDefault()" class="nav-item"
+                            [class.active]="isDropdownOpen(item.label)" [title]="item.label">
+                            <i class="bi" [ngClass]="item.icon"></i>
+                            <span *ngIf="!sidebarCollapsed">{{ item.label }}</span>
+                            <i *ngIf="!sidebarCollapsed" class="bi dropdown-arrow"
+                                [ngClass]="isDropdownOpen(item.label) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                        </a>
+                        <div class="submenu" [class.open]="isDropdownOpen(item.label)" *ngIf="!sidebarCollapsed">
+                            <a *ngFor="let child of item.children" [routerLink]="child.route" routerLinkActive="active"
+                                class="submenu-item" [class.hidden]="!hasAccess(child)" [title]="child.label">
+                                <i class="bi" [ngClass]="child.icon"></i>
+                                <span>{{ child.label }}</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Regular item (no children) -->
+                    <a *ngIf="!item.children || item.children.length === 0" [routerLink]="item.route"
+                        routerLinkActive="active" class="nav-item" [title]="item.label">
+                        <i class="bi" [ngClass]="item.icon"></i>
+                        <span *ngIf="!sidebarCollapsed">{{ item.label }}</span>
+                    </a>
+                </div>
+            </ng-container>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="#" (click)="logout(); $event.preventDefault()" class="nav-item logout-btn" title="Logout">
+                <i class="bi bi-box-arrow-right"></i>
+                <span *ngIf="!sidebarCollapsed">Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <button class="sidebar-toggle" (click)="toggleSidebar()" title="Toggle Sidebar">
+                    <i class="bi bi-list"></i>
+                </button>
+
+                <!-- Breadcrumbs -->
+                <nav class="breadcrumb-nav" *ngIf="breadcrumbs.length > 0">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a routerLink="/dashboard/admin">
+                                <i class="bi bi-house-door"></i>
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item" *ngFor="let breadcrumb of breadcrumbs; let last = last"
+                            [class.active]="last">
+                            <a *ngIf="!last" [routerLink]="breadcrumb.url">{{ breadcrumb.label }}</a>
+                            <span *ngIf="last">{{ breadcrumb.label }}</span>
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+
+            <div class="top-bar-right">
+                <!-- User Profile -->
+                <div class="user-profile">
+                    <div class="user-avatar">
+                        <i class="bi bi-person-circle"></i>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">{{ user?.firstName }} {{ user?.lastName }}</span>
+                        <span class="user-role">{{ user?.role }}</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="content-area">
+            <router-outlet></router-outlet>
+        </div>
+    </main>
+</div>

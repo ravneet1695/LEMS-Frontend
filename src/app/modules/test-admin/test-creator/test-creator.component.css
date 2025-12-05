@@ -1,0 +1,239 @@
+/* Progress Steps */
+.progress-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-number {
+    background-color: #0d6efd;
+    color: white;
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.2);
+}
+
+.step.completed .step-number {
+    background-color: #198754;
+    color: white;
+}
+
+.step-label {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.step.active .step-label {
+    color: #0d6efd;
+    font-weight: 600;
+}
+
+.step.completed .step-label {
+    color: #198754;
+}
+
+.step-line {
+    width: 100px;
+    height: 2px;
+    background-color: #e9ecef;
+    margin: 0 10px;
+    transition: all 0.3s ease;
+}
+
+.step-line.active {
+    background-color: #198754;
+}
+
+/* Question Cards */
+.question-list .card,
+.selected-questions .card {
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.question-list .card:hover {
+    border-left-color: #0d6efd;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.selected-questions .card {
+    border-left-color: #198754;
+}
+
+/* Scrollbar Styling */
+.question-list::-webkit-scrollbar,
+.selected-questions::-webkit-scrollbar {
+    width: 8px;
+}
+
+.question-list::-webkit-scrollbar-track,
+.selected-questions::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.question-list::-webkit-scrollbar-thumb,
+.selected-questions::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.question-list::-webkit-scrollbar-thumb:hover,
+.selected-questions::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Form Controls */
+.form-control:focus,
+.form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
+
+/* Card Headers */
+.card-header {
+    font-weight: 600;
+}
+
+/* Buttons */
+.btn {
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* Loading States */
+.spinner-border {
+    animation: spinner-border 0.75s linear infinite;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .progress-steps {
+        padding: 10px 0;
+    }
+
+    .step-number {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+    }
+
+    .step-label {
+        font-size: 12px;
+    }
+
+    .step-line {
+        width: 50px;
+    }
+
+    .question-list,
+    .selected-questions {
+        max-height: 300px !important;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Form Validation */
+.form-control.is-invalid,
+.form-select.is-invalid {
+    border-color: #dc3545;
+}
+
+.invalid-feedback {
+    display: block;
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Alert Styling */
+.alert {
+    border-left: 4px solid;
+}
+
+.alert-info {
+    border-left-color: #0dcaf0;
+}
+
+/* Empty State */
+.text-center.text-muted {
+    opacity: 0.6;
+}
+
+/* Button Groups */
+.btn-group-vertical .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Input Groups */
+.input-group-sm .input-group-text {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Card Body Padding */
+.card-body.p-2 {
+    padding: 0.5rem !important;
+}
+
+/* Flex Utilities */
+.flex-grow-1 {
+    flex-grow: 1;
+}
+
+/* Gap Utilities */
+.gap-2 {
+    gap: 0.5rem;
+}
