@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { SweetAlertService } from '../../../core/services/sweetalert.service';
+import { SettingsService } from '../../../core/services/settings.service';
 
 @Component({
     selector: 'app-organization-management',
@@ -46,27 +47,56 @@ export class OrganizationManagementComponent implements OnInit {
     filterType = '';
     filterStatus = '';
 
+    // Pagination
+    loading = false;
+    currentPage: number = 1;
+    pageSize: number = 3; // Reduced from 10 to 3 for easier testing
+    totalPages: number = 0;
+    totalOrganizations: number = 0;
 
-    constructor(private http: HttpClient) { }
+    constructor(
+        private http: HttpClient,
+        private settingsService: SettingsService
+    ) { }
 
-    ngOnInit(): void {
+    async ngOnInit(): Promise<void> {
+        // Load settings first
+        await this.settingsService.loadSettings();
+        this.pageSize = this.settingsService.getTablePageSize();
+
         this.loadOrganizations();
     }
 
-    loadOrganizations(): void {
-        this.http.get<any>(`${environment.apiUrl}/organizations`).subscribe({
+    loadOrganizations() {
+        this.loading = true;
+        const params: any = {
+            page: this.currentPage,
+            limit: this.pageSize
+        };
+
+        this.http.get<any>(`${environment.apiUrl}/organizations`, { params }).subscribe({
             next: (res) => {
-                this.organizations = res.data;
-                this.filteredOrganizations = res.data;
-                this.applyFilters();
+                this.organizations = res.data || [];
+                this.filteredOrganizations = this.organizations;
+                this.totalOrganizations = res.pagination?.total || 0;
+                this.totalPages = res.pagination?.pages || 0;
+                this.currentPage = res.pagination?.page || 1;
+                this.loading = false;
             },
             error: (err) => {
                 this.error = 'Failed to load organizations';
-                console.error(err);
+                console.error('Error loading organizations:', err);
+                this.loading = false;
             }
         });
     }
 
+    changePage(page: number) {
+        if (page >= 1 && page <= this.totalPages) {
+            this.currentPage = page;
+            this.loadOrganizations();
+        }
+    }
     applyFilters(): void {
         let filtered = [...this.organizations];
 

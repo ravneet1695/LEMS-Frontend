@@ -18,6 +18,7 @@ import { QuestionEditorComponent } from './modules/question-bank/question-editor
 import { BulkUploadComponent } from './modules/question-bank/bulk-upload/bulk-upload.component';
 import { ReportsComponent } from './modules/reports/reports.component';
 import { ExternalUserComponent } from './modules/registration/external-user/external-user.component';
+import { DepartmentsComponent } from './modules/organization-config/departments/departments';
 import { SharedLayoutComponent } from './shared/components/shared-layout/shared-layout.component';
 import { AuthGuard } from './core/guards/auth.guard';
 import { RoleGuard } from './core/guards/role.guard';
@@ -63,7 +64,7 @@ export const routes: Routes = [
                 data: { roles: ['super_admin', 'org_admin'], breadcrumb: 'Audit Logs' }
             },
             {
-                path: 'admin/organization-config',
+                path: 'organization-config',
                 component: OrganizationConfigComponent,
                 canActivate: [RoleGuard],
                 data: { roles: ['super_admin', 'org_admin'], breadcrumb: 'Organization Config' }
@@ -85,6 +86,12 @@ export const routes: Routes = [
                 component: OrganizationUsersComponent,
                 canActivate: [RoleGuard],
                 data: { roles: ['super_admin', 'org_admin'], breadcrumb: 'Organization Users' }
+            },
+            {
+                path: 'organization-config/departments',
+                component: DepartmentsComponent,
+                canActivate: [RoleGuard],
+                data: { roles: ['super_admin', 'org_admin'], breadcrumb: 'Departments' }
             },
 
             // Test Administration Routes

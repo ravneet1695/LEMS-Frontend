@@ -12,8 +12,8 @@ import { environment } from '../../../environments/environment';
     styleUrls: ['./audit-logs.component.css']
 })
 export class AuditLogsComponent implements OnInit {
-    logs: any[] = [];
-    loading = true;
+    auditLogs: any[] = [];
+    loading = false;
     error = '';
 
     // Filters
@@ -27,7 +27,7 @@ export class AuditLogsComponent implements OnInit {
 
     // Pagination
     currentPage = 1;
-    pageSize = 50;
+    pageSize = 10; // Will be updated from backend response
     totalPages = 1;
     totalLogs = 0;
 
@@ -68,7 +68,7 @@ export class AuditLogsComponent implements OnInit {
 
     ngOnInit(): void {
         this.loadOrganizations();
-        this.loadLogs();
+        this.loadAuditLogs();
         this.loadStatistics();
         this.loadOrganizationStats();
     }
@@ -105,7 +105,7 @@ export class AuditLogsComponent implements OnInit {
         }
     }
 
-    loadLogs(): void {
+    loadAuditLogs(): void {
         this.loading = true;
         const params: any = {
             page: this.currentPage,
@@ -115,21 +115,25 @@ export class AuditLogsComponent implements OnInit {
         if (this.filterUser) params.user = this.filterUser;
         if (this.filterAction) params.action = this.filterAction;
         if (this.filterResource) params.resource = this.filterResource;
+        if (this.filterOrganization) params.organization = this.filterOrganization;
         if (this.filterStartDate) params.startDate = this.filterStartDate;
         if (this.filterEndDate) params.endDate = this.filterEndDate;
-        if (this.filterOrganization) params.organization = this.filterOrganization;
         if (this.filterUserSearch) params.search = this.filterUserSearch;
 
         this.http.get<any>(`${environment.apiUrl}/audit-logs`, { params }).subscribe({
             next: (res) => {
-                this.logs = res.data || [];
+                this.auditLogs = res.data || [];
                 this.totalLogs = res.pagination?.total || 0;
                 this.totalPages = res.pagination?.pages || 1;
+                this.currentPage = res.pagination?.page || 1;
+                if (res.pagination?.limit) {
+                    this.pageSize = res.pagination.limit;
+                }
                 this.loading = false;
             },
             error: (err) => {
                 this.error = 'Failed to load audit logs';
-                console.error('Error loading logs:', err);
+                console.error('Error loading audit logs:', err);
                 this.loading = false;
             }
         });
@@ -169,7 +173,7 @@ export class AuditLogsComponent implements OnInit {
 
     onFilterChange(): void {
         this.currentPage = 1;
-        this.loadLogs();
+        this.loadAuditLogs();
     }
 
     clearFilters(): void {
@@ -181,7 +185,7 @@ export class AuditLogsComponent implements OnInit {
         this.filterUserSearch = '';
         this.filterOrganization = '';
         this.currentPage = 1;
-        this.loadLogs();
+        this.loadAuditLogs();
     }
 
     applyDatePreset(days: number): void {
@@ -204,7 +208,7 @@ export class AuditLogsComponent implements OnInit {
     changePage(page: number): void {
         if (page >= 1 && page <= this.totalPages) {
             this.currentPage = page;
-            this.loadLogs();
+            this.loadAuditLogs();
         }
     }
 

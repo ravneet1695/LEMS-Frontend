@@ -3,7 +3,7 @@
         <h2>Question Bank</h2>
         <div>
             <button class="btn btn-primary me-2" routerLink="/questions/question-editor">
-                <i class="bi bi-plus-circle"></i> Create Question
+                <i class="bi bi-plus-circle-fill"></i> Create Question
             </button>
             <button class="btn btn-secondary" routerLink="/questions/bulk-upload">
                 <i class="bi bi-upload"></i> Bulk Upload
@@ -115,11 +115,11 @@
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary" (click)="viewQuestion(question)"
                                         title="View">
-                                        <i class="bi bi-eye"></i>
+                                        <i class="bi bi-eye-fill"></i>
                                     </button>
                                     <button class="btn btn-outline-secondary" (click)="editQuestion(question)"
                                         title="Edit">
-                                        <i class="bi bi-pencil"></i>
+                                        <i class="bi bi-pencil-fill"></i>
                                     </button>
                                     <button *ngIf="question.approvalStatus === 'pending'"
                                         class="btn btn-outline-success" (click)="approveQuestion(question._id)"

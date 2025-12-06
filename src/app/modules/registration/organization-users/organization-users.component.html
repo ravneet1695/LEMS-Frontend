@@ -139,9 +139,6 @@
                                     <i class="bi" [class.bi-toggle-on]="user.isActive"
                                         [class.bi-toggle-off]="!user.isActive"></i>
                                 </button>
-                                <button class="btn-icon danger" (click)="deleteUser(user)" title="Delete">
-                                    <i class="bi bi-trash-fill"></i>
-                                </button>
                             </div>
                         </td>
                     </tr>
@@ -317,7 +314,7 @@
                 </button>
                 <button type="button" class="btn btn-success" (click)="saveUser()"
                     [disabled]="!userForm.organization && currentUser?.role === 'super_admin' && userForm.role !== 'super_admin'">
-                    <i class="bi" [ngClass]="isEditing ? 'bi-check-circle' : 'bi-plus-circle'"></i>
+                    <i class="bi" [ngClass]="isEditing ? 'bi-check-circle' : 'bi-plus-circle-fill'"></i>
                     {{ isEditing ? 'Update User' : 'Create User' }}
                 </button>
             </div>

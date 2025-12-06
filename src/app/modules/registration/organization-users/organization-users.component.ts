@@ -32,7 +32,7 @@ export class OrganizationUsersComponent implements OnInit {
 
     // Pagination
     currentPage = 1;
-    pageSize = 20;
+    pageSize = 10; // Will be updated from backend response
     totalPages = 1;
     totalUsers = 0;
 
@@ -169,6 +169,11 @@ export class OrganizationUsersComponent implements OnInit {
                 this.users = res.data || [];
                 this.totalUsers = res.pagination?.total || 0;
                 this.totalPages = res.pagination?.pages || 1;
+                this.currentPage = res.pagination?.page || 1;
+                // Update pageSize from backend response (reflects global setting)
+                if (res.pagination?.limit) {
+                    this.pageSize = res.pagination.limit;
+                }
                 this.loading = false;
             },
             error: (err) => {

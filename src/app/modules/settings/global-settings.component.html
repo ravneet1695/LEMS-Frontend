@@ -80,6 +80,13 @@
                     <span class="badge bg-secondary ms-2">{{ getTabCount('features') }}</span>
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" [class.active]="activeTab === 'ui'" (click)="setActiveTab('ui')" type="button">
+                    <i class="bi" [ngClass]="getTabIcon('ui')"></i>
+                    <span class="d-none d-md-inline ms-2">UI</span>
+                    <span class="badge bg-secondary ms-2">{{ getTabCount('ui') }}</span>
+                </button>
+            </li>
         </ul>
 
         <!-- Platform Settings Tab -->
@@ -234,6 +241,62 @@
                 <div *ngIf="settings.features.length === 0" class="text-center text-muted py-4">
                     <i class="bi bi-inbox fs-1"></i>
                     <p class="mt-2">No feature flags configured</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- UI Settings Tab -->
+        <div class="card shadow-sm" *ngIf="activeTab === 'ui'">
+            <div class="card-header bg-purple text-white"
+                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h5 class="mb-0"><i class="bi bi-palette"></i> UI Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6" *ngFor="let setting of settings.ui">
+                        <label class="form-label fw-bold">
+                            {{ formatKey(setting.key) }}
+                            <i class="bi bi-info-circle text-muted" [title]="setting.description"></i>
+                        </label>
+
+                        <!-- Number Input for tablePageSize -->
+                        <div *ngIf="setting.type === 'number'">
+                            <input type="number" class="form-control" [value]="setting.value"
+                                [class.is-invalid]="!isValid(setting)"
+                                (input)="updateSettingValue(setting, $any($event.target).value)" min="10" max="100"
+                                [placeholder]="setting.description">
+                            <div class="invalid-feedback" *ngIf="!isValid(setting)">
+                                Value must be between 10 and 100
+                            </div>
+                            <small class="text-muted">{{ setting.description }}</small>
+                        </div>
+
+                        <!-- String Input for other UI settings -->
+                        <div *ngIf="setting.type === 'string'">
+                            <input type="text" class="form-control" [value]="setting.value"
+                                [class.is-invalid]="!isValid(setting)"
+                                (input)="updateSettingValue(setting, $any($event.target).value)"
+                                [placeholder]="setting.description">
+                            <div class="invalid-feedback" *ngIf="!isValid(setting)">
+                                Invalid value
+                            </div>
+                            <small class="text-muted">{{ setting.description }}</small>
+                        </div>
+
+                        <!-- Boolean Toggle for UI settings -->
+                        <div *ngIf="setting.type === 'boolean'" class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" [id]="setting.key"
+                                [checked]="getSettingValue(setting)"
+                                (change)="updateSettingValue(setting, $any($event.target).checked)">
+                            <label class="form-check-label" [for]="setting.key">
+                                {{ setting.description }}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="settings.ui.length === 0" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox fs-1"></i>
+                    <p class="mt-2">No UI settings configured</p>
                 </div>
             </div>
         </div>

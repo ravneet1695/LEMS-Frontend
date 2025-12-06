@@ -16,7 +16,7 @@ import { SweetAlertService } from '../../../core/services/sweetalert.service';
 })
 export class QuestionBankComponent implements OnInit {
     questions: any[] = [];
-    loading = true;
+    loading = false;
     error = '';
     success = '';
 
@@ -31,7 +31,7 @@ export class QuestionBankComponent implements OnInit {
 
     // Pagination
     currentPage = 1;
-    pageSize = 20;
+    pageSize = 10; // Will be updated from backend response
     totalPages = 1;
     totalQuestions = 0;
 
@@ -88,6 +88,10 @@ export class QuestionBankComponent implements OnInit {
                 this.questions = res.data || [];
                 this.totalQuestions = res.pagination?.total || 0;
                 this.totalPages = res.pagination?.pages || 1;
+                this.currentPage = res.pagination?.page || 1;
+                if (res.pagination?.limit) {
+                    this.pageSize = res.pagination.limit;
+                }
                 this.loading = false;
             },
             error: (err) => {

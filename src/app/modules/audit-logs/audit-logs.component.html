@@ -127,9 +127,6 @@
                                 {{ preset.label }}
                             </button>
                         </div>
-                        <button class="btn btn-success btn-sm" (click)="exportToCSV()" [disabled]="logs.length === 0">
-                            <i class="bi bi-download"></i> Export CSV
-                        </button>
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <div *ngIf="isSuperAdmin" class="d-flex align-items-center">
@@ -145,6 +142,13 @@
                         </button>
                     </div>
                 </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Audit Logs</h5>
+                <button class="btn btn-success btn-sm" (click)="exportToCSV()" [disabled]="auditLogs.length === 0">
+                    <i class="bi bi-download"></i> Export to CSV
+                </button>
             </div>
 
             <div class="row g-3">
@@ -204,17 +208,20 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let log of logs">
-                            <td>{{ formatDate(log.createdAt) }}</td>
-                            <td>
-                                <div>{{ log.user?.firstName }} {{ log.user?.lastName }}</div>
-                                <small class="text-muted">{{ log.user?.email }}</small>
-                            </td>
+                        <tr *ngFor="let log of auditLogs">
+                            <td>{{ formatDate(log.timestamp) }}</td>
                             <td *ngIf="isSuperAdmin">
-                                <span class="badge bg-secondary" *ngIf="log.organization?.name">
-                                    {{ log.organization?.name }}
-                                </span>
-                                <span class="text-muted" *ngIf="!log.organization?.name">-</span>
+                                <span class="badge bg-secondary" *ngIf="log.organization">{{ log.organization.name
+                                    }}</span>
+                                <span class="text-muted" *ngIf="!log.organization">-</span>
+                            </td>
+                            <td>
+                                <div *ngIf="log.user">
+                                    <strong>{{ log.user.firstName }} {{ log.user.lastName }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ log.user.email }}</small>
+                                </div>
+                                <small class="text-muted" *ngIf="!log.user">System</small>
                             </td>
                             <td>
                                 <span class="badge" [ngClass]="getActionBadgeClass(log.action)">
@@ -222,11 +229,13 @@
                                 </span>
                             </td>
                             <td>{{ formatResource(log.resource) }}</td>
-                            <td>{{ log.description || '-' }}</td>
+                            <td>
+                                <small>{{ log.description }}</small>
+                            </td>
                             <td>
                                 <div *ngIf="log.ipAddress">
-                                    <small class="text-muted d-block">
-                                        <i class="bi bi-geo-alt-fill me-1"></i>{{ log.ipAddress }}
+                                    <small class="text-muted">
+                                        {{ log.ipAddress }}
                                     </small>
                                     <small class="text-muted" *ngIf="log.location">
                                         {{ log.location }}
@@ -236,11 +245,11 @@
                             </td>
                             <td>
                                 <button class="btn btn-sm btn-outline-info" (click)="viewDetails(log)">
-                                    <i class="bi bi-eye"></i>
+                                    <i class="bi bi-eye-fill"></i>
                                 </button>
                             </td>
                         </tr>
-                        <tr *ngIf="logs.length === 0">
+                        <tr *ngIf="auditLogs.length === 0">
                             <td [attr.colspan]="isSuperAdmin ? 8 : 7" class="text-center py-4">
                                 <i class="bi bi-inbox fs-1 text-muted"></i>
                                 <p class="text-muted mt-2">No audit logs found</p>
@@ -256,23 +265,23 @@
                     Showing {{ (currentPage - 1) * pageSize + 1 }} to
                     {{ Math.min(currentPage * pageSize, totalLogs) }} of {{ totalLogs }} logs
                 </div>
-                <nav>
-                    <ul class="pagination mb-0">
-                        <li class="page-item" [class.disabled]="currentPage === 1">
-                            <a class="page-link" (click)="changePage(currentPage - 1)" href="javascript:void(0)">
-                                <i class="bi bi-chevron-left"></i>
-                            </a>
-                        </li>
-                        <li class="page-item" *ngFor="let page of pages" [class.active]="page === currentPage">
-                            <a class="page-link" (click)="changePage(page)" href="javascript:void(0)">{{ page }}</a>
-                        </li>
-                        <li class="page-item" [class.disabled]="currentPage === totalPages">
-                            <a class="page-link" (click)="changePage(currentPage + 1)" href="javascript:void(0)">
-                                <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
+            </div>
+
+            <!-- Pagination -->
+            <div *ngIf="!loading && totalPages > 1" class="pagination-modern">
+                <button class="page-btn" [disabled]="currentPage === 1" (click)="changePage(currentPage - 1)">
+                    <i class="bi bi-chevron-left"></i>
+                    Previous
+                </button>
+
+                <div class="page-info">
+                    Page {{ currentPage }} of {{ totalPages }}
+                </div>
+
+                <button class="page-btn" [disabled]="currentPage === totalPages" (click)="changePage(currentPage + 1)">
+                    Next
+                    <i class="bi bi-chevron-right"></i>
+                </button>
             </div>
         </div>
     </div>

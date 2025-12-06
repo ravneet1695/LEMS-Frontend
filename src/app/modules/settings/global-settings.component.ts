@@ -19,6 +19,7 @@ interface SettingsGroup {
     email: Setting[];
     security: Setting[];
     features: Setting[];
+    ui: Setting[];
 }
 
 @Component({
@@ -33,17 +34,19 @@ export class GlobalSettingsComponent implements OnInit {
         platform: [],
         email: [],
         security: [],
-        features: []
+        features: [],
+        ui: []
     };
 
     originalSettings: SettingsGroup = {
         platform: [],
         email: [],
         security: [],
-        features: []
+        features: [],
+        ui: []
     };
 
-    activeTab: 'platform' | 'email' | 'security' | 'features' = 'platform';
+    activeTab: 'platform' | 'email' | 'security' | 'features' | 'ui' = 'platform';
     loading = false;
     saving = false;
     error = '';
@@ -64,7 +67,8 @@ export class GlobalSettingsComponent implements OnInit {
                     platform: res.data.platform || [],
                     email: res.data.email || [],
                     security: res.data.security || [],
-                    features: res.data.features || []
+                    features: res.data.features || [],
+                    ui: res.data.ui || []
                 };
                 // Deep clone for comparison
                 this.originalSettings = JSON.parse(JSON.stringify(this.settings));
@@ -78,7 +82,7 @@ export class GlobalSettingsComponent implements OnInit {
         });
     }
 
-    setActiveTab(tab: 'platform' | 'email' | 'security' | 'features'): void {
+    setActiveTab(tab: 'platform' | 'email' | 'security' | 'features' | 'ui'): void {
         this.activeTab = tab;
     }
 
@@ -124,7 +128,8 @@ export class GlobalSettingsComponent implements OnInit {
             ...this.settings.platform,
             ...this.settings.email,
             ...this.settings.security,
-            ...this.settings.features
+            ...this.settings.features,
+            ...this.settings.ui
         ];
         return allSettings.every(s => this.isValid(s));
     }
@@ -144,7 +149,8 @@ export class GlobalSettingsComponent implements OnInit {
             ...this.settings.platform.map(s => ({ ...s, category: 'platform' })),
             ...this.settings.email.map(s => ({ ...s, category: 'email' })),
             ...this.settings.security.map(s => ({ ...s, category: 'security' })),
-            ...this.settings.features.map(s => ({ ...s, category: 'features' }))
+            ...this.settings.features.map(s => ({ ...s, category: 'features' })),
+            ...this.settings.ui.map(s => ({ ...s, category: 'ui' }))
         ];
 
         this.http.post<any>(`${environment.apiUrl}/settings/bulk`, { settings: allSettings }).subscribe({
@@ -210,12 +216,13 @@ export class GlobalSettingsComponent implements OnInit {
             platform: 'bi-gear',
             email: 'bi-envelope',
             security: 'bi-shield-lock',
-            features: 'bi-toggles'
+            features: 'bi-toggles',
+            ui: 'bi-palette'
         };
         return icons[tab] || 'bi-gear';
     }
 
-    getTabCount(tab: 'platform' | 'email' | 'security' | 'features'): number {
+    getTabCount(tab: 'platform' | 'email' | 'security' | 'features' | 'ui'): number {
         return this.settings[tab]?.length || 0;
     }
 }

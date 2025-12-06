@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { SweetAlertService } from '../../../core/services/sweetalert.service';
+import { SettingsService } from '../../../core/services/settings.service';
 
 @Component({
   selector: 'app-departments',
@@ -24,6 +25,12 @@ export class DepartmentsComponent implements OnInit {
   selectedOrganization = '';
   filterStatus = 'all';
 
+  // Pagination
+  currentPage: number = 1;
+  pageSize: number = 3; // Reduced from 10 to 3 for easier testing
+  totalPages: number = 0;
+  totalDepartments: number = 0;
+
   // Department form
   showDepartmentForm = false;
   isEditing = false;
@@ -35,9 +42,16 @@ export class DepartmentsComponent implements OnInit {
   };
   selectedDepartment: any = null;
 
-  constructor(private http: HttpClient) { }
+  constructor(
+    private http: HttpClient,
+    private settingsService: SettingsService
+  ) { }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    // Load settings first
+    await this.settingsService.loadSettings();
+    this.pageSize = this.settingsService.getTablePageSize();
+
     this.loadOrganizations();
     this.loadDepartments();
   }
@@ -55,15 +69,23 @@ export class DepartmentsComponent implements OnInit {
 
   loadDepartments(): void {
     this.loading = true;
-    const params: any = {};
+    const params: any = {
+      page: this.currentPage,
+      limit: this.pageSize
+    };
 
     if (this.selectedOrganization) params.organization = this.selectedOrganization;
     if (this.searchTerm) params.search = this.searchTerm;
-    if (this.filterStatus !== 'all') params.status = this.filterStatus;
+    if (this.filterStatus !== 'all') {
+      params.isActive = this.filterStatus === 'active';
+    }
 
     this.http.get<any>(`${environment.apiUrl}/departments`, { params }).subscribe({
       next: (res) => {
         this.departments = res.data || [];
+        this.totalDepartments = res.pagination?.total || 0;
+        this.totalPages = res.pagination?.pages || 0;
+        this.currentPage = res.pagination?.page || 1;
         this.loading = false;
       },
       error: (err) => {
@@ -74,7 +96,15 @@ export class DepartmentsComponent implements OnInit {
     });
   }
 
+  changePage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.loadDepartments();
+    }
+  }
+
   onFilterChange(): void {
+    this.currentPage = 1; // Reset to page 1 when filters change
     this.loadDepartments();
   }
 

@@ -15,7 +15,8 @@ import { SweetAlertService } from '../../../core/services/sweetalert.service';
 })
 export class TestListComponent implements OnInit {
     tests: any[] = [];
-    loading = true;
+    filteredTests: any[] = [];
+    loading = false;
     error = '';
     success = '';
 
@@ -28,7 +29,7 @@ export class TestListComponent implements OnInit {
 
     // Pagination
     currentPage = 1;
-    pageSize = 20;
+    pageSize = 10; // Will be updated from backend response
     totalPages = 1;
     totalTests = 0;
 
@@ -63,8 +64,13 @@ export class TestListComponent implements OnInit {
         this.http.get<any>(`${environment.apiUrl}/tests`, { params }).subscribe({
             next: (res) => {
                 this.tests = res.data || [];
+                this.filteredTests = this.tests;
                 this.totalTests = res.pagination?.total || 0;
                 this.totalPages = res.pagination?.pages || 1;
+                this.currentPage = res.pagination?.page || 1;
+                if (res.pagination?.limit) {
+                    this.pageSize = res.pagination.limit;
+                }
                 this.loading = false;
             },
             error: (err) => {
