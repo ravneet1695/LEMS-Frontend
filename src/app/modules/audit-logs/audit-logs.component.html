@@ -1,0 +1,361 @@
+<div class="container-fluid">
+    <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-2 g-2" *ngIf="!loadingStats && statistics">
+        <div class="col-md-3">
+            <div class="card stats-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <h6 class="card-subtitle mb-0">Total Actions</h6>
+                        <i class="bi bi-activity" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                    </div>
+                    <h3 class="card-title mb-0">{{ getTotalActions() }}</h3>
+                    <small>Last 30 days</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <h6 class="card-subtitle mb-0">Most Common Action</h6>
+                        <i class="bi bi-lightning-charge-fill" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                    </div>
+                    <h3 class="card-title mb-0">{{ formatAction(statistics.actionStats[0]?._id || 'N/A') }}</h3>
+                    <small>{{ statistics.actionStats[0]?.count || 0 }} times</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <h6 class="card-subtitle mb-0">Most Active Resource</h6>
+                        <i class="bi bi-diagram-3-fill" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                    </div>
+                    <h3 class="card-title mb-0">{{ formatResource(statistics.resourceStats[0]?._id || 'N/A') }}</h3>
+                    <small>{{ statistics.resourceStats[0]?.count || 0 }} actions</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <h6 class="card-subtitle mb-0">Active Users</h6>
+                        <i class="bi bi-people-fill" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                    </div>
+                    <h3 class="card-title mb-0">{{ statistics.topUsers?.length || 0 }}</h3>
+                    <small>Last 30 days</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Organization Statistics View -->
+    <div *ngIf="showOrgStats && isSuperAdmin">
+        <div *ngIf="loadingOrgStats" class="text-center py-5">
+            <div class="spinner-border text-primary"></div>
+            <p class="mt-3 text-muted">Loading organization statistics...</p>
+        </div>
+
+        <div *ngIf="!loadingOrgStats" class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-4">Audit Logs by Organization (Last 30 Days)</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Organization</th>
+                                <th>Total Actions</th>
+                                <th>Unique Users</th>
+                                <th>Top Actions</th>
+                                <th>Top Resources</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let org of organizationStats">
+                                <td>
+                                    <strong>{{ org.organizationName || 'Unknown' }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ org.totalActions }}</span>
+                                </td>
+                                <td>{{ org.uniqueUsers }}</td>
+                                <td>
+                                    <div *ngIf="org.actionBreakdown">
+                                        <span *ngFor="let action of getTopItems(org.actionBreakdown, 3)"
+                                            class="badge bg-info me-1">
+                                            {{ formatAction(action.key) }}: {{ action.value }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div *ngIf="org.resourceBreakdown">
+                                        <span *ngFor="let resource of getTopItems(org.resourceBreakdown, 3)"
+                                            class="badge bg-secondary me-1">
+                                            {{ formatResource(resource.key) }}: {{ resource.value }}
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr *ngIf="organizationStats.length === 0">
+                                <td colspan="5" class="text-center py-4">
+                                    <i class="bi bi-inbox fs-1 text-muted"></i>
+                                    <p class="text-muted mt-2">No organization data found</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-3" *ngIf="!showOrgStats">
+        <div class="card-body">
+            <!-- Date Range Presets and Organization Filter -->
+            <div class="mb-3">
+                <div class="d-flex align-items-center justify-content-between flex-wrap">
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="form-label fw-bold mb-0 me-2">Quick Date Ranges:</label>
+                        <div class="btn-group" role="group">
+                            <button *ngFor="let preset of datePresets" type="button"
+                                class="btn btn-outline-primary btn-sm" (click)="applyDatePreset(preset.days)">
+                                {{ preset.label }}
+                            </button>
+                        </div>
+                        <button class="btn btn-success btn-sm" (click)="exportToCSV()" [disabled]="logs.length === 0">
+                            <i class="bi bi-download"></i> Export CSV
+                        </button>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div *ngIf="isSuperAdmin" class="d-flex align-items-center">
+                            <label class="form-label fw-bold mb-0 me-2">Organization:</label>
+                            <select class="form-select form-select-sm" [(ngModel)]="filterOrganization"
+                                (change)="onFilterChange()" style="min-width: 200px;">
+                                <option value="">All Organizations</option>
+                                <option *ngFor="let org of organizations" [value]="org._id">{{ org.name }}</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
+                            <i class="bi bi-x-circle"></i> Clear All Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <select class="form-select" [(ngModel)]="filterAction" (change)="onFilterChange()">
+                        <option value="">All Actions</option>
+                        <option *ngFor="let action of actions" [value]="action">{{ formatAction(action) }}</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" [(ngModel)]="filterResource" (change)="onFilterChange()">
+                        <option value="">All Resources</option>
+                        <option *ngFor="let resource of resources" [value]="resource">{{ formatResource(resource) }}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="date" class="form-control" [(ngModel)]="filterStartDate" (change)="onFilterChange()"
+                        placeholder="Start Date">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" class="form-control" [(ngModel)]="filterEndDate" (change)="onFilterChange()"
+                        placeholder="End Date">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control" [(ngModel)]="filterUserSearch" (input)="onFilterChange()"
+                        placeholder="Search user...">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading && !showOrgStats" class="card">
+        <div class="card-body text-center py-5">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+            <p class="mt-3 text-muted fw-semibold">Loading audit logs...</p>
+            <small class="text-muted">Please wait while we fetch the data</small>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="card" *ngIf="!loading && !showOrgStats">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>User</th>
+                            <th *ngIf="isSuperAdmin">Organization</th>
+                            <th>Action</th>
+                            <th>Resource</th>
+                            <th>Description</th>
+                            <th>IP & Location</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let log of logs">
+                            <td>{{ formatDate(log.createdAt) }}</td>
+                            <td>
+                                <div>{{ log.user?.firstName }} {{ log.user?.lastName }}</div>
+                                <small class="text-muted">{{ log.user?.email }}</small>
+                            </td>
+                            <td *ngIf="isSuperAdmin">
+                                <span class="badge bg-secondary" *ngIf="log.organization?.name">
+                                    {{ log.organization?.name }}
+                                </span>
+                                <span class="text-muted" *ngIf="!log.organization?.name">-</span>
+                            </td>
+                            <td>
+                                <span class="badge" [ngClass]="getActionBadgeClass(log.action)">
+                                    {{ formatAction(log.action) }}
+                                </span>
+                            </td>
+                            <td>{{ formatResource(log.resource) }}</td>
+                            <td>{{ log.description || '-' }}</td>
+                            <td>
+                                <div *ngIf="log.ipAddress">
+                                    <small class="text-muted d-block">
+                                        <i class="bi bi-geo-alt-fill me-1"></i>{{ log.ipAddress }}
+                                    </small>
+                                    <small class="text-muted" *ngIf="log.location">
+                                        {{ log.location }}
+                                    </small>
+                                </div>
+                                <small class="text-muted" *ngIf="!log.ipAddress">-</small>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info" (click)="viewDetails(log)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr *ngIf="logs.length === 0">
+                            <td [attr.colspan]="isSuperAdmin ? 8 : 7" class="text-center py-4">
+                                <i class="bi bi-inbox fs-1 text-muted"></i>
+                                <p class="text-muted mt-2">No audit logs found</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="totalPages > 1">
+                <div class="text-muted">
+                    Showing {{ (currentPage - 1) * pageSize + 1 }} to
+                    {{ Math.min(currentPage * pageSize, totalLogs) }} of {{ totalLogs }} logs
+                </div>
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item" [class.disabled]="currentPage === 1">
+                            <a class="page-link" (click)="changePage(currentPage - 1)" href="javascript:void(0)">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item" *ngFor="let page of pages" [class.active]="page === currentPage">
+                            <a class="page-link" (click)="changePage(page)" href="javascript:void(0)">{{ page }}</a>
+                        </li>
+                        <li class="page-item" [class.disabled]="currentPage === totalPages">
+                            <a class="page-link" (click)="changePage(currentPage + 1)" href="javascript:void(0)">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Details Modal -->
+<div class="modal fade" [class.show]="showDetailsModal" [style.display]="showDetailsModal ? 'block' : 'none'"
+    tabindex="-1" *ngIf="selectedLog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Audit Log Details</h5>
+                <button type="button" class="btn-close" (click)="closeDetailsModal()"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="30%">Date & Time:</th>
+                        <td>{{ formatDate(selectedLog.createdAt) }}</td>
+                    </tr>
+                    <tr>
+                        <th>User:</th>
+                        <td>{{ selectedLog.user?.firstName }} {{ selectedLog.user?.lastName }} ({{
+                            selectedLog.user?.email }})</td>
+                    </tr>
+                    <tr *ngIf="selectedLog.organization?.name">
+                        <th>Organization:</th>
+                        <td>
+                            <span class="badge bg-secondary">{{ selectedLog.organization?.name }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Action:</th>
+                        <td>
+                            <span class="badge" [ngClass]="getActionBadgeClass(selectedLog.action)">
+                                {{ formatAction(selectedLog.action) }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Resource:</th>
+                        <td>{{ formatResource(selectedLog.resource) }}</td>
+                    </tr>
+                    <tr *ngIf="selectedLog.resourceId">
+                        <th>Resource ID:</th>
+                        <td><code>{{ selectedLog.resourceId }}</code></td>
+                    </tr>
+                    <tr>
+                        <th>Description:</th>
+                        <td>{{ selectedLog.description || '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>IP Address:</th>
+                        <td>
+                            <div *ngIf="selectedLog.ipAddress">
+                                <i class="bi bi-geo-alt-fill me-1 text-primary"></i>
+                                <strong>{{ selectedLog.ipAddress }}</strong>
+                                <div *ngIf="selectedLog.location" class="mt-1">
+                                    <small class="text-muted">
+                                        <i class="bi bi-pin-map-fill me-1"></i>{{ selectedLog.location }}
+                                    </small>
+                                </div>
+                            </div>
+                            <span *ngIf="!selectedLog.ipAddress">-</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>User Agent:</th>
+                        <td><small>{{ selectedLog.userAgent || '-' }}</small></td>
+                    </tr>
+                    <tr *ngIf="selectedLog.changes && Object.keys(selectedLog.changes).length > 0">
+                        <th>Changes:</th>
+                        <td>
+                            <pre class="bg-light p-2 rounded">{{ selectedLog.changes | json }}</pre>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeDetailsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showDetailsModal" *ngIf="showDetailsModal" (click)="closeDetailsModal()">
+</div>

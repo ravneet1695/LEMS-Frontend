@@ -1,0 +1,251 @@
+<div class="container-fluid mt-4">
+    <!-- Header with Actions -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-gear-fill text-primary"></i> Global Settings
+            </h2>
+            <p class="text-muted mb-0">Configure platform-wide settings and preferences</p>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary" (click)="discardChanges()" [disabled]="!hasChanges || saving">
+                <i class="bi bi-x-circle"></i> Discard
+            </button>
+            <button class="btn btn-outline-warning" (click)="resetToDefaults()" [disabled]="saving">
+                <i class="bi bi-arrow-clockwise"></i> Reset to Defaults
+            </button>
+            <button class="btn btn-primary" (click)="saveSettings()" [disabled]="!hasChanges || saving || !isFormValid">
+                <i class="bi bi-save"></i> {{ saving ? 'Saving...' : 'Save Changes' }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Change Indicator -->
+    <div *ngIf="hasChanges" class="alert alert-info alert-dismissible fade show">
+        <i class="bi bi-info-circle"></i> You have unsaved changes. Click "Save Changes" to apply them.
+        <button type="button" class="btn-close" (click)="discardChanges()"></button>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div *ngIf="success" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle"></i> {{ success }}
+        <button type="button" class="btn-close" (click)="success = ''"></button>
+    </div>
+    <div *ngIf="error" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle"></i> {{ error }}
+        <button type="button" class="btn-close" (click)="error = ''"></button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 text-muted">Loading settings...</p>
+    </div>
+
+    <!-- Settings Content -->
+    <div *ngIf="!loading">
+        <!-- Tabs Navigation -->
+        <ul class="nav nav-tabs nav-fill mb-4" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" [class.active]="activeTab === 'platform'" (click)="setActiveTab('platform')"
+                    type="button">
+                    <i class="bi" [ngClass]="getTabIcon('platform')"></i>
+                    <span class="d-none d-md-inline ms-2">Platform</span>
+                    <span class="badge bg-secondary ms-2">{{ getTabCount('platform') }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" [class.active]="activeTab === 'email'" (click)="setActiveTab('email')"
+                    type="button">
+                    <i class="bi" [ngClass]="getTabIcon('email')"></i>
+                    <span class="d-none d-md-inline ms-2">Email</span>
+                    <span class="badge bg-secondary ms-2">{{ getTabCount('email') }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" [class.active]="activeTab === 'security'" (click)="setActiveTab('security')"
+                    type="button">
+                    <i class="bi" [ngClass]="getTabIcon('security')"></i>
+                    <span class="d-none d-md-inline ms-2">Security</span>
+                    <span class="badge bg-secondary ms-2">{{ getTabCount('security') }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" [class.active]="activeTab === 'features'" (click)="setActiveTab('features')"
+                    type="button">
+                    <i class="bi" [ngClass]="getTabIcon('features')"></i>
+                    <span class="d-none d-md-inline ms-2">Features</span>
+                    <span class="badge bg-secondary ms-2">{{ getTabCount('features') }}</span>
+                </button>
+            </li>
+        </ul>
+
+        <!-- Platform Settings Tab -->
+        <div class="card shadow-sm" *ngIf="activeTab === 'platform'">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-gear"></i> Platform Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6" *ngFor="let setting of settings.platform">
+                        <label class="form-label fw-bold">
+                            {{ formatKey(setting.key) }}
+                            <i class="bi bi-info-circle text-muted" [title]="setting.description"></i>
+                        </label>
+                        <input type="text" class="form-control" [value]="setting.value"
+                            [class.is-invalid]="!isValid(setting)"
+                            (input)="updateSettingValue(setting, $any($event.target).value)"
+                            [placeholder]="setting.description">
+                        <div class="invalid-feedback" *ngIf="!isValid(setting)">
+                            Invalid value
+                        </div>
+                        <small class="text-muted">{{ setting.description }}</small>
+                    </div>
+                </div>
+                <div *ngIf="settings.platform.length === 0" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox fs-1"></i>
+                    <p class="mt-2">No platform settings configured</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Settings Tab -->
+        <div class="card shadow-sm" *ngIf="activeTab === 'email'">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-envelope"></i> Email Configuration</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6" *ngFor="let setting of settings.email">
+                        <label class="form-label fw-bold">
+                            {{ formatKey(setting.key) }}
+                            <i class="bi bi-info-circle text-muted" [title]="setting.description"></i>
+                        </label>
+                        <input [type]="setting.type === 'number' ? 'number' : 'text'" class="form-control"
+                            [class.is-invalid]="!isValid(setting)" [value]="setting.value"
+                            (input)="updateSettingValue(setting, $any($event.target).value)"
+                            [placeholder]="setting.description">
+                        <div class="invalid-feedback" *ngIf="!isValid(setting)">
+                            Invalid value
+                        </div>
+                        <small class="text-muted">{{ setting.description }}</small>
+                    </div>
+                </div>
+                <div *ngIf="settings.email.length === 0" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox fs-1"></i>
+                    <p class="mt-2">No email settings configured</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Settings Tab -->
+        <div class="card shadow-sm" *ngIf="activeTab === 'security'">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-shield-lock"></i> Security Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6" *ngFor="let setting of settings.security">
+                        <label class="form-label fw-bold">
+                            {{ formatKey(setting.key) }}
+                            <i class="bi bi-info-circle text-muted" [title]="setting.description"></i>
+                        </label>
+
+                        <!-- Boolean Toggle -->
+                        <div *ngIf="setting.type === 'boolean'" class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" [id]="setting.key"
+                                [checked]="getSettingValue(setting)"
+                                (change)="updateSettingValue(setting, $any($event.target).checked)">
+                            <label class="form-check-label" [for]="setting.key">
+                                {{ setting.description }}
+                            </label>
+                        </div>
+
+                        <!-- Number Input -->
+                        <div *ngIf="setting.type === 'number'">
+                            <input type="number" class="form-control" [value]="setting.value"
+                                [class.is-invalid]="!isValid(setting)"
+                                (input)="updateSettingValue(setting, $any($event.target).value)"
+                                [placeholder]="setting.description">
+                            <div class="invalid-feedback" *ngIf="!isValid(setting)">
+                                Invalid value
+                            </div>
+                            <small class="text-muted">{{ setting.description }}</small>
+                        </div>
+
+                        <!-- String Input -->
+                        <div *ngIf="setting.type === 'string'">
+                            <input type="text" class="form-control" [value]="setting.value"
+                                [class.is-invalid]="!isValid(setting)"
+                                (input)="updateSettingValue(setting, $any($event.target).value)"
+                                [placeholder]="setting.description">
+                            <div class="invalid-feedback" *ngIf="!isValid(setting)">
+                                Invalid value
+                            </div>
+                            <small class="text-muted">{{ setting.description }}</small>
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="settings.security.length === 0" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox fs-1"></i>
+                    <p class="mt-2">No security settings configured</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Flags Tab -->
+        <div class="card shadow-sm" *ngIf="activeTab === 'features'">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-toggles"></i> Feature Flags</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6 col-lg-4" *ngFor="let setting of settings.features">
+                        <div class="card h-100 border-2" [class.border-success]="getSettingValue(setting)">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="card-title mb-2">
+                                            {{ formatKey(setting.key) }}
+                                        </h6>
+                                        <p class="card-text text-muted small mb-0">
+                                            {{ setting.description }}
+                                        </p>
+                                    </div>
+                                    <div class="form-check form-switch ms-3">
+                                        <input class="form-check-input" type="checkbox" role="switch" [id]="setting.key"
+                                            [checked]="getSettingValue(setting)"
+                                            (change)="updateSettingValue(setting, $any($event.target).checked)"
+                                            style="width: 3em; height: 1.5em;">
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="badge" [class.bg-success]="getSettingValue(setting)"
+                                        [class.bg-secondary]="!getSettingValue(setting)">
+                                        {{ getSettingValue(setting) ? 'Enabled' : 'Disabled' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="settings.features.length === 0" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox fs-1"></i>
+                    <p class="mt-2">No feature flags configured</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="d-flex justify-content-end gap-2 mt-4">
+            <button class="btn btn-outline-secondary" (click)="discardChanges()" [disabled]="!hasChanges || saving">
+                <i class="bi bi-x-circle"></i> Discard Changes
+            </button>
+            <button class="btn btn-primary" (click)="saveSettings()" [disabled]="!hasChanges || saving || !isFormValid">
+                <i class="bi bi-save"></i> {{ saving ? 'Saving...' : 'Save Changes' }}
+            </button>
+        </div>
+    </div>
+</div>

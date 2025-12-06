@@ -1,0 +1,499 @@
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-upload text-primary"></i> Bulk Upload Questions
+            </h2>
+            <p class="text-muted mb-0">Upload questions from files or auto-extract from PDF with advanced options</p>
+        </div>
+        <button class="btn btn-outline-secondary" (click)="cancel()">
+            <i class="bi bi-x-circle"></i> Cancel
+        </button>
+    </div>
+
+    <!-- Mode Tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link" [class.active]="uploadMode === 'manual'" (click)="uploadMode = 'manual'; removeFile()">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Manual Upload (Excel/Word)
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" [class.active]="uploadMode === 'auto'" (click)="uploadMode = 'auto'; removeFile()">
+                <i class="bi bi-magic"></i> Auto-Extract from PDF
+            </a>
+        </li>
+    </ul>
+
+    <!-- Manual Upload Section -->
+    <div *ngIf="uploadMode === 'manual' && !showPreview">
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-file-earmark-arrow-up"></i> Upload File</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-info-circle"></i> Supported File Formats:</h6>
+                            <ul class="mb-0">
+                                <li>Microsoft Word (.doc, .docx)</li>
+                                <li>Microsoft Excel (.xls, .xlsx)</li>
+                                <li>PDF (.pdf)</li>
+                            </ul>
+                        </div>
+
+                        <div class="upload-area" [class.has-file]="selectedFile">
+                            <input type="file" id="fileInput" class="d-none" (change)="onFileSelect($event)"
+                                accept=".doc,.docx,.xls,.xlsx,.pdf">
+                            <label for="fileInput" class="upload-label">
+                                <i class="bi bi-cloud-upload fs-1"></i>
+                                <p class="mt-3 mb-2">
+                                    <strong *ngIf="!selectedFile">Click to upload or drag and drop</strong>
+                                    <strong *ngIf="selectedFile">{{ selectedFile.name }}</strong>
+                                </p>
+                                <small class="text-muted">Word, Excel, or PDF files only</small>
+                            </label>
+                        </div>
+
+                        <div *ngIf="selectedFile" class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                <div>
+                                    <i class="bi bi-file-earmark-text fs-4 text-primary"></i>
+                                    <span class="ms-2">{{ selectedFile.name }}</span>
+                                    <small class="text-muted ms-2">({{ (selectedFile.size / 1024).toFixed(2) }}
+                                        KB)</small>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" (click)="removeFile()">
+                                    <i class="bi bi-trash"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button class="btn btn-primary btn-lg" (click)="uploadFile()"
+                                [disabled]="!selectedFile || uploading">
+                                <i class="bi bi-upload"></i>
+                                {{ uploading ? 'Uploading...' : 'Upload and Import' }}
+                            </button>
+                        </div>
+
+                        <div *ngIf="uploading" class="text-center mt-4">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-2 text-muted">Processing file...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-Extract from PDF Section -->
+    <div *ngIf="uploadMode === 'auto' && !showPreview">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-magic"></i> Auto-Extract Questions from PDF</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- PDF Upload -->
+                        <div class="upload-area" [class.has-file]="selectedFile">
+                            <input type="file" id="pdfInput" class="d-none" (change)="onPdfSelect($event)"
+                                accept=".pdf">
+                            <label for="pdfInput" class="upload-label">
+                                <i class="bi bi-file-pdf fs-1 text-danger"></i>
+                                <p class="mt-3 mb-2">
+                                    <strong *ngIf="!selectedFile">Click to upload PDF</strong>
+                                    <strong *ngIf="selectedFile">{{ selectedFile.name }}</strong>
+                                </p>
+                                <small class="text-muted">PDF files only</small>
+                            </label>
+                        </div>
+
+                        <div *ngIf="selectedFile" class="mt-3 mb-4">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                <div>
+                                    <i class="bi bi-file-pdf fs-4 text-danger"></i>
+                                    <span class="ms-2">{{ selectedFile.name }}</span>
+                                    <small class="text-muted ms-2">({{ (selectedFile.size / 1024).toFixed(2) }}
+                                        KB)</small>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" (click)="removeFile()">
+                                    <i class="bi bi-trash"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Extraction Options -->
+                        <div class="card bg-light border-0 mb-4">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">
+                                    <i class="bi bi-gear"></i> Extraction Options
+                                </h6>
+
+                                <!-- Question Type -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Question Type</label>
+                                    <select class="form-select" [(ngModel)]="questionType">
+                                        <option *ngFor="let type of questionTypes" [value]="type.value">
+                                            {{ type.label }}
+                                        </option>
+                                    </select>
+                                    <small class="text-muted">{{ getQuestionTypeDescription(questionType) }}</small>
+                                </div>
+
+                                <!-- Page Ranges -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">
+                                            <i class="bi bi-file-text"></i> Question Pages
+                                        </label>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control" placeholder="Start Page"
+                                                    [(ngModel)]="questionPageStart" min="1">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control"
+                                                    placeholder="End Page (Optional)" [(ngModel)]="questionPageEnd"
+                                                    min="1">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Specify which pages contain questions</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">
+                                            <i class="bi bi-check-circle"></i> Answer Pages (Optional)
+                                        </label>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control" placeholder="Start Page"
+                                                    [(ngModel)]="answerPageStart" min="1">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control" placeholder="End Page"
+                                                    [(ngModel)]="answerPageEnd" min="1">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">If answers are on separate pages</small>
+                                    </div>
+                                </div>
+
+                                <!-- Hierarchy Mapping -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="bi bi-diagram-3"></i> Hierarchy Mapping
+                                    </label>
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control" placeholder="Grade (e.g., Grade 2)"
+                                                [(ngModel)]="grade">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control"
+                                                placeholder="Subject (e.g., Science)" [(ngModel)]="subject">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control"
+                                                placeholder="Topic (e.g., Pollution)" [(ngModel)]="topic">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control" placeholder="Subtopic (Optional)"
+                                                [(ngModel)]="subtopic">
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">Organize questions by grade, subject, topic, and
+                                        subtopic</small>
+                                </div>
+
+                                <!-- Difficulty -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Difficulty Level</label>
+                                    <select class="form-select" [(ngModel)]="difficulty">
+                                        <option value="easy">Easy</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="hard">Hard</option>
+                                    </select>
+                                </div>
+
+                                <!-- Marks and Tags -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">
+                                            <i class="bi bi-award"></i> Marks per Question
+                                        </label>
+                                        <input type="number" class="form-control" [(ngModel)]="marks" min="1" max="100">
+                                        <small class="text-muted">Default marks for each question</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">
+                                            <i class="bi bi-tags"></i> Tags (Optional)
+                                        </label>
+                                        <input type="text" class="form-control"
+                                            placeholder="e.g., science, grade2, pollution" [(ngModel)]="tags">
+                                        <small class="text-muted">Comma-separated tags</small>
+                                    </div>
+                                </div>
+
+                                <!-- Image Upload -->
+                                <div class="mb-0">
+                                    <label class="form-label fw-bold">
+                                        <i class="bi bi-image"></i> Question Images (Optional)
+                                    </label>
+                                    <input type="file" class="form-control" (change)="onImageSelect($event)"
+                                        accept="image/*" multiple>
+                                    <small class="text-muted">Upload images that will be attached to all
+                                        questions</small>
+
+                                    <!-- Image Previews -->
+                                    <div *ngIf="imagePreviews.length > 0" class="mt-3">
+                                        <div class="row g-2">
+                                            <div class="col-md-3" *ngFor="let preview of imagePreviews; let i = index">
+                                                <div class="position-relative">
+                                                    <img [src]="preview" class="img-thumbnail" alt="Preview">
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1"
+                                                        (click)="removeImage(i)">
+                                                        <i class="bi bi-x"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Answer Key Mapping Info -->
+                        <div class="alert alert-warning mb-4">
+                            <h6><i class="bi bi-exclamation-triangle"></i> Answer Key Mapping</h6>
+                            <p class="mb-0 small">
+                                If your PDF has answers on separate pages, specify the answer page range above.
+                                The system will automatically map answers to questions based on question numbers.
+                                Supported formats: "1. a)", "Answer: a", "Ans: a"
+                            </p>
+                        </div>
+
+                        <!-- Extract Button -->
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-success btn-lg" (click)="autoExtractFromPdf()"
+                                [disabled]="!selectedFile || extracting">
+                                <i class="bi bi-magic"></i>
+                                {{ extracting ? 'Extracting Questions...' : 'Auto-Extract Questions' }}
+                            </button>
+                        </div>
+
+                        <!-- Loading -->
+                        <div *ngIf="extracting" class="text-center mt-4">
+                            <div class="spinner-border text-success" role="status"></div>
+                            <p class="mt-2 text-muted">AI is analyzing the PDF and extracting questions...</p>
+                            <small class="text-muted">This may take a few moments</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question Type Guide -->
+                <div class="card mt-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Question Type Guide</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="accordion" id="questionTypeAccordion">
+                            <div class="accordion-item" *ngFor="let type of questionTypes; let i = index">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button"
+                                        [attr.data-bs-toggle]="'collapse'" [attr.data-bs-target]="'#collapse' + i">
+                                        <strong>{{ type.label }}</strong>
+                                    </button>
+                                </h2>
+                                <div [id]="'collapse' + i" class="accordion-collapse collapse"
+                                    data-bs-parent="#questionTypeAccordion">
+                                    <div class="accordion-body">
+                                        <p>{{ type.description }}</p>
+                                        <div class="alert alert-light mb-0">
+                                            <strong>Format Example:</strong>
+                                            <div *ngIf="type.value === 'mcq_single'" class="mt-2">
+                                                <code>1. What is the capital of France?<br>
+                                                a) London b) Paris c) Berlin d) Madrid</code>
+                                            </div>
+                                            <div *ngIf="type.value === 'true_false'" class="mt-2">
+                                                <code>1. The Earth is flat.<br>
+                                                a) True b) False</code>
+                                            </div>
+                                            <div *ngIf="type.value === 'short_answer'" class="mt-2">
+                                                <code>1. What is the chemical symbol for water?</code>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Section -->
+    <div *ngIf="showPreview">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-eye"></i>
+                        Preview Extracted Questions ({{ uploadedQuestions.length }})
+                    </h5>
+                    <button class="btn btn-sm btn-light" (click)="showPreview = false; uploadedQuestions = []">
+                        <i class="bi bi-x"></i> Close Preview
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Review Questions:</strong> Please review the extracted questions below. You can edit or
+                    remove questions before importing them to the question bank.
+                </div>
+
+                <!-- Question Cards -->
+                <div class="questions-preview">
+                    <div class="card mb-3" *ngFor="let question of uploadedQuestions; let i = index">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <span class="badge bg-primary me-2">Q{{ i + 1 }}</span>
+                                        <span class="badge bg-info me-2">{{ question.type }}</span>
+                                        <span class="badge" [class.bg-success]="question.difficulty === 'easy'"
+                                            [class.bg-warning]="question.difficulty === 'medium'"
+                                            [class.bg-danger]="question.difficulty === 'hard'">
+                                            {{ question.difficulty }}
+                                        </span>
+                                        <span class="badge bg-secondary ms-2">
+                                            <i class="bi bi-award"></i> {{ question.marks }} marks
+                                        </span>
+                                    </h6>
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" (click)="editQuestion(i)"
+                                        [class.active]="question.editing">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </button>
+                                    <button class="btn btn-outline-danger" (click)="removeQuestion(i)">
+                                        <i class="bi bi-trash"></i> Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Question Text -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Question:</label>
+                                <div *ngIf="!question.editing" class="question-text">
+                                    {{ question.questionText }}
+                                </div>
+                                <textarea *ngIf="question.editing" class="form-control" rows="3"
+                                    [(ngModel)]="question.questionText"></textarea>
+                            </div>
+
+                            <!-- Options (for MCQ) -->
+                            <div *ngIf="question.options && question.options.length > 0" class="mb-3">
+                                <label class="form-label fw-bold">Options:</label>
+                                <div class="options-list">
+                                    <div class="form-check mb-2" *ngFor="let option of question.options; let j = index">
+                                        <input class="form-check-input" type="checkbox" [checked]="option.isCorrect"
+                                            (change)="option.isCorrect = !option.isCorrect"
+                                            [disabled]="!question.editing">
+                                        <label class="form-check-label" [class.text-success]="option.isCorrect"
+                                            [class.fw-bold]="option.isCorrect">
+                                            <strong>{{ String.fromCharCode(97 + j) }})</strong>
+                                            <span *ngIf="!question.editing">{{ option.text }}</span>
+                                            <input *ngIf="question.editing" type="text"
+                                                class="form-control form-control-sm d-inline-block w-75 ms-2"
+                                                [(ngModel)]="option.text">
+                                            <span *ngIf="option.isCorrect" class="badge bg-success ms-2">Correct</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Hierarchy -->
+                            <div class="row mb-2">
+                                <div class="col-md-3">
+                                    <small class="text-muted">Grade:</small>
+                                    <div *ngIf="!question.editing">{{ question.hierarchy?.grade || 'N/A' }}</div>
+                                    <input *ngIf="question.editing" type="text" class="form-control form-control-sm"
+                                        [(ngModel)]="question.hierarchy.grade">
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Subject:</small>
+                                    <div *ngIf="!question.editing">{{ question.hierarchy?.subject || 'N/A' }}</div>
+                                    <input *ngIf="question.editing" type="text" class="form-control form-control-sm"
+                                        [(ngModel)]="question.hierarchy.subject">
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Topic:</small>
+                                    <div *ngIf="!question.editing">{{ question.hierarchy?.topic || 'N/A' }}</div>
+                                    <input *ngIf="question.editing" type="text" class="form-control form-control-sm"
+                                        [(ngModel)]="question.hierarchy.topic">
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Subtopic:</small>
+                                    <div *ngIf="!question.editing">{{ question.hierarchy?.subtopic || 'N/A' }}</div>
+                                    <input *ngIf="question.editing" type="text" class="form-control form-control-sm"
+                                        [(ngModel)]="question.hierarchy.subtopic">
+                                </div>
+                            </div>
+
+                            <!-- Tags -->
+                            <div *ngIf="question.tags && question.tags.length > 0">
+                                <small class="text-muted">Tags:</small>
+                                <div>
+                                    <span class="badge bg-secondary me-1" *ngFor="let tag of question.tags">
+                                        {{ tag }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex gap-2 mt-4">
+                    <button class="btn btn-success btn-lg flex-grow-1" (click)="confirmImport()">
+                        <i class="bi bi-check-circle"></i> Approve & Import to Question Bank
+                    </button>
+                    <button class="btn btn-outline-secondary btn-lg"
+                        (click)="showPreview = false; uploadedQuestions = []">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .question-text {
+        padding: 0.75rem;
+        background-color: #f8f9fa;
+        border-left: 3px solid #0d6efd;
+        border-radius: 0.25rem;
+    }
+
+    .options-list {
+        padding-left: 1rem;
+    }
+
+    .questions-preview {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .form-check-input:checked {
+        background-color: #198754;
+        border-color: #198754;
+    }
+</style>

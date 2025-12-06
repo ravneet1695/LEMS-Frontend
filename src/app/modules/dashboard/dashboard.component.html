@@ -1,0 +1,409 @@
+<div class="container-fluid">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted">Loading dashboard...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error && !loading" class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+    </div>
+
+    <!-- Super Admin Dashboard -->
+    <div *ngIf="!loading && stats && userRole === 'super_admin'">
+        <!-- Statistics Cards -->
+        <div class="row mb-2 g-2">
+            <div class="col-md-3">
+                <div class="card stats-card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-subtitle mb-0">Organizations</h6>
+                            <i class="bi bi-building" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                        </div>
+                        <h3 class="card-title mb-0">{{ stats.overview.totalOrganizations }}</h3>
+                        <small>{{ stats.overview.totalOrganizations - (stats.organizationStats?.length || 0) }}
+                            active</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-subtitle mb-0">Total Users</h6>
+                            <i class="bi bi-people-fill" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                        </div>
+                        <h3 class="card-title mb-0">{{ stats.overview.totalUsers }}</h3>
+                        <small>{{ stats.overview.activeUsers }} active</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-subtitle mb-0">Total Tests</h6>
+                            <i class="bi bi-file-earmark-text" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                        </div>
+                        <h3 class="card-title mb-0">{{ stats.overview.totalTests }}</h3>
+                        <small>{{ stats.overview.totalQuestions || 0 }} questions</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-subtitle mb-0">Test Attempts</h6>
+                            <i class="bi bi-clipboard-check" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                        </div>
+                        <h3 class="card-title mb-0">{{ stats.overview.totalAttempts || 0 }}</h3>
+                        <small>All time</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Organizations & Users -->
+        <div class="row g-2">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-building"></i> Recent Organizations</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Code</th>
+                                        <th>Type</th>
+                                        <th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let org of stats.recentOrganizations">
+                                        <td>{{ org.name }}</td>
+                                        <td><span class="badge bg-secondary">{{ org.code }}</span></td>
+                                        <td>{{ org.type }}</td>
+                                        <td>{{ formatDate(org.createdAt) }}</td>
+                                    </tr>
+                                    <tr *ngIf="!stats.recentOrganizations || stats.recentOrganizations.length === 0">
+                                        <td colspan="4" class="text-center text-muted">No organizations yet</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-person-plus"></i> Recent Users</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Joined</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let user of stats.recentUsers">
+                                        <td>{{ user.firstName }} {{ user.lastName }}</td>
+                                        <td>{{ user.email }}</td>
+                                        <td><span class="badge" [ngClass]="getRoleBadgeClass(user.role)">{{
+                                                formatRole(user.role) }}</span></td>
+                                        <td>{{ formatDate(user.createdAt) }}</td>
+                                    </tr>
+                                    <tr *ngIf="!stats.recentUsers || stats.recentUsers.length === 0">
+                                        <td colspan="4" class="text-center text-muted">No users yet</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Org Admin Dashboard -->
+    <div *ngIf="!loading && stats && userRole === 'org_admin'">
+        <!-- Organization Info -->
+        <div class="card mb-2" *ngIf="stats.organization">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <img *ngIf="stats.organization.logo" [src]="'http://localhost:5003' + stats.organization.logo"
+                        alt="Logo" class="org-logo me-3">
+                    <div>
+                        <h4 class="mb-1">{{ stats.organization.name }}</h4>
+                        <p class="text-muted mb-0">{{ stats.organization.code }} • {{ stats.organization.type }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-2 g-2">
+            <div class="col-md-3">
+                <div class="card stats-card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-subtitle mb-0">Total Users</h6>
+                            <i class="bi bi-people-fill" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                        </div>
+                        <h3 class="card-title mb-0">{{ stats.overview.totalUsers }}</h3>
+                        <small>{{ stats.overview.activeUsers }} active</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-subtitle mb-0">Total Tests</h6>
+                            <i class="bi bi-file-earmark-text" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                        </div>
+                        <h3 class="card-title mb-0">{{ stats.overview.totalTests }}</h3>
+                        <small>{{ stats.overview.totalQuestions || 0 }} questions</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-subtitle mb-0">Test Attempts</h6>
+                            <i class="bi bi-clipboard-check" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                        </div>
+                        <h3 class="card-title mb-0">{{ stats.overview.totalAttempts || 0 }}</h3>
+                        <small>All time</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-subtitle mb-0">Inactive Users</h6>
+                            <i class="bi bi-person-x" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                        </div>
+                        <h3 class="card-title mb-0">{{ stats.overview.inactiveUsers || 0 }}</h3>
+                        <small>Deactivated</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Users & Tests -->
+        <div class="row g-2">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-person-plus"></i> Recent Users</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let user of stats.recentUsers">
+                                        <td>{{ user.firstName }} {{ user.lastName }}</td>
+                                        <td><span class="badge" [ngClass]="getRoleBadgeClass(user.role)">{{
+                                                formatRole(user.role) }}</span></td>
+                                        <td><span class="badge"
+                                                [ngClass]="user.isActive ? 'bg-success' : 'bg-secondary'">{{
+                                                user.isActive ? 'Active' : 'Inactive' }}</span></td>
+                                    </tr>
+                                    <tr *ngIf="!stats.recentUsers || stats.recentUsers.length === 0">
+                                        <td colspan="3" class="text-center text-muted">No users yet</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Recent Tests</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let test of stats.recentTests">
+                                        <td>{{ test.title }}</td>
+                                        <td><span class="badge bg-info">{{ test.status }}</span></td>
+                                        <td>{{ formatDate(test.createdAt) }}</td>
+                                    </tr>
+                                    <tr *ngIf="!stats.recentTests || stats.recentTests.length === 0">
+                                        <td colspan="3" class="text-center text-muted">No tests yet</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Learner Dashboard -->
+    <div *ngIf="!loading && stats && userRole === 'learner'">
+        <!-- Welcome Card -->
+        <div class="card mb-2">
+            <div class="card-body">
+                <h4 class="mb-1">Welcome back, {{ stats.user?.firstName }}!</h4>
+                <p class="text-muted mb-0">{{ stats.user?.organization?.name }}</p>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-2 g-2">
+            <div class="col-md-3">
+                <div class="card stats-card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-subtitle mb-0">Total Attempts</h6>
+                            <i class="bi bi-clipboard-check" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                        </div>
+                        <h3 class="card-title mb-0">{{ stats.overview.totalAttempts }}</h3>
+                        <small>All tests</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-subtitle mb-0">Passed Tests</h6>
+                            <i class="bi bi-check-circle-fill" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                        </div>
+                        <h3 class="card-title mb-0">{{ stats.overview.passedTests }}</h3>
+                        <small>{{ stats.overview.completedTests }} completed</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-subtitle mb-0">Average Score</h6>
+                            <i class="bi bi-graph-up" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                        </div>
+                        <h3 class="card-title mb-0">{{ stats.overview.averageScore }}%</h3>
+                        <small>Overall performance</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-danger text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-subtitle mb-0">Failed Tests</h6>
+                            <i class="bi bi-x-circle-fill" style="font-size: 1.25rem; opacity: 0.75;"></i>
+                        </div>
+                        <h3 class="card-title mb-0">{{ stats.overview.failedTests }}</h3>
+                        <small>Need improvement</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Attempts & Upcoming Tests -->
+        <div class="row g-2">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Attempts</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Test</th>
+                                        <th>Score</th>
+                                        <th>Result</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let attempt of stats.recentAttempts">
+                                        <td>{{ attempt.test?.title || 'N/A' }}</td>
+                                        <td><strong>{{ attempt.percentage || 0 }}%</strong></td>
+                                        <td><span class="badge"
+                                                [ngClass]="attempt.passed ? 'bg-success' : 'bg-danger'">{{
+                                                attempt.passed ? 'Passed' : 'Failed' }}</span></td>
+                                        <td>{{ formatDate(attempt.createdAt) }}</td>
+                                    </tr>
+                                    <tr *ngIf="!stats.recentAttempts || stats.recentAttempts.length === 0">
+                                        <td colspan="4" class="text-center text-muted">No attempts yet</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Upcoming Tests</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Duration</th>
+                                        <th>End Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let test of stats.upcomingTests">
+                                        <td>{{ test.title }}</td>
+                                        <td>{{ test.duration }} min</td>
+                                        <td>{{ formatDate(test.endDate) }}</td>
+                                    </tr>
+                                    <tr *ngIf="!stats.upcomingTests || stats.upcomingTests.length === 0">
+                                        <td colspan="3" class="text-center text-muted">No upcoming tests</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

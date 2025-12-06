@@ -1,0 +1,148 @@
+<div class="external-registration-wrapper">
+    <div class="registration-container">
+        <!-- Header -->
+        <div class="registration-header">
+            <div class="logo">
+                <i class="bi bi-person-plus-fill"></i>
+            </div>
+            <h1>Join as External User</h1>
+            <p>Create your account to access our learning platform</p>
+        </div>
+
+        <!-- Registration Form -->
+        <div class="registration-form">
+            <form [formGroup]="registrationForm" (ngSubmit)="onSubmit()">
+                <div class="row">
+                    <!-- First Name -->
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="firstName" placeholder="First Name"
+                                formControlName="firstName"
+                                [class.is-invalid]="registrationForm.get('firstName')?.invalid && registrationForm.get('firstName')?.touched">
+                            <label for="firstName">First Name *</label>
+                            <div class="invalid-feedback">First name is required</div>
+                        </div>
+                    </div>
+
+                    <!-- Last Name -->
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="lastName" placeholder="Last Name"
+                                formControlName="lastName"
+                                [class.is-invalid]="registrationForm.get('lastName')?.invalid && registrationForm.get('lastName')?.touched">
+                            <label for="lastName">Last Name *</label>
+                            <div class="invalid-feedback">Last name is required</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email -->
+                <div class="form-floating mb-3">
+                    <input type="email" class="form-control" id="email" placeholder="name@example.com"
+                        formControlName="email"
+                        [class.is-invalid]="registrationForm.get('email')?.invalid && registrationForm.get('email')?.touched">
+                    <label for="email">Email Address *</label>
+                    <div class="invalid-feedback"
+                        *ngIf="registrationForm.get('email')?.invalid && registrationForm.get('email')?.touched">
+                        <span *ngIf="registrationForm.get('email')?.errors?.['required']">Email is required</span>
+                        <span *ngIf="registrationForm.get('email')?.errors?.['email']">Please enter a valid email</span>
+                    </div>
+                </div>
+
+                <!-- Phone -->
+                <div class="form-floating mb-3">
+                    <input type="tel" class="form-control" id="phone" placeholder="Phone Number" formControlName="phone"
+                        [class.is-invalid]="registrationForm.get('phone')?.invalid && registrationForm.get('phone')?.touched">
+                    <label for="phone">Phone Number *</label>
+                    <div class="invalid-feedback">Phone number is required</div>
+                </div>
+
+                <!-- Country -->
+                <div class="form-floating mb-3">
+                    <select class="form-select" id="country" formControlName="country"
+                        [class.is-invalid]="registrationForm.get('country')?.invalid && registrationForm.get('country')?.touched">
+                        <option value="">Select Country</option>
+                        <option value="US">United States</option>
+                        <option value="UK">United Kingdom</option>
+                        <option value="CA">Canada</option>
+                        <option value="IN">India</option>
+                        <option value="AU">Australia</option>
+                    </select>
+                    <label for="country">Country *</label>
+                    <div class="invalid-feedback">Please select a country</div>
+                </div>
+
+                <div class="row">
+                    <!-- Password -->
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control" id="password" placeholder="Password"
+                                formControlName="password"
+                                [class.is-invalid]="registrationForm.get('password')?.invalid && registrationForm.get('password')?.touched">
+                            <label for="password">Password *</label>
+                            <div class="invalid-feedback">Password must be at least 6 characters</div>
+                        </div>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control" id="confirmPassword"
+                                placeholder="Confirm Password" formControlName="confirmPassword"
+                                [class.is-invalid]="(registrationForm.get('confirmPassword')?.invalid && registrationForm.get('confirmPassword')?.touched) || registrationForm.errors?.['mismatch']">
+                            <label for="confirmPassword">Confirm Password *</label>
+                            <div class="invalid-feedback">
+                                <span *ngIf="registrationForm.errors?.['mismatch']">Passwords do not match</span>
+                                <span *ngIf="!registrationForm.errors?.['mismatch']">Please confirm your password</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terms and Conditions -->
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="agreeToTerms" formControlName="agreeToTerms"
+                        [class.is-invalid]="registrationForm.get('agreeToTerms')?.invalid && registrationForm.get('agreeToTerms')?.touched">
+                    <label class="form-check-label" for="agreeToTerms">
+                        I agree to the <a href="#" class="text-primary">Terms and Conditions</a> and <a href="#"
+                            class="text-primary">Privacy Policy</a>
+                    </label>
+                    <div class="invalid-feedback d-block"
+                        *ngIf="registrationForm.get('agreeToTerms')?.invalid && registrationForm.get('agreeToTerms')?.touched">
+                        You must agree to the terms and conditions
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div class="alert alert-danger alert-modern" *ngIf="errorMessage">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>{{ errorMessage }}</span>
+                </div>
+
+                <!-- Success Message -->
+                <div class="alert alert-success alert-modern" *ngIf="successMessage">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>{{ successMessage }}</span>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn-primary btn-register"
+                    [disabled]="registrationForm.invalid || loading">
+                    <span *ngIf="!loading">Create Account</span>
+                    <span *ngIf="loading">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Creating account...
+                    </span>
+                </button>
+
+                <!-- Login Link -->
+                <div class="login-link">
+                    <p>
+                        Already have an account?
+                        <a routerLink="/auth/login">Sign in</a>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

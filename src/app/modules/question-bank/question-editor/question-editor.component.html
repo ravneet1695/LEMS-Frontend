@@ -1,0 +1,229 @@
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-pencil-square text-primary"></i>
+                {{ isEditMode ? 'Edit Question' : 'Create New Question' }}
+            </h2>
+            <p class="text-muted mb-0">Fill in all required fields to create a question</p>
+        </div>
+        <button class="btn btn-outline-secondary" (click)="cancel()" [disabled]="saving">
+            <i class="bi bi-x-circle"></i> Cancel
+        </button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-3 text-muted">Loading question...</p>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="questionForm" *ngIf="!loading">
+        <div class="row">
+            <!-- Left Column -->
+            <div class="col-lg-8">
+                <!-- Basic Information Card -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Basic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Question Type <span class="text-danger">*</span></label>
+                            <select class="form-select" formControlName="type">
+                                <option *ngFor="let type of questionTypes" [value]="type.value">{{ type.label }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Question Text <span class="text-danger">*</span></label>
+                            <textarea class="form-control" formControlName="questionText" rows="4"
+                                placeholder="Enter your question here..."></textarea>
+                            <small class="text-muted">Tip: You can use plain text or HTML for formatting</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Explanation</label>
+                            <textarea class="form-control" formControlName="explanation" rows="3"
+                                placeholder="Provide an explanation for the correct answer (optional)"></textarea>
+                        </div>
+
+                        <!-- Image Upload -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Upload Images</label>
+                            <input type="file" class="form-control" (change)="onImageSelect($event)" accept="image/*"
+                                multiple>
+                            <small class="text-muted">You can upload multiple images</small>
+
+                            <!-- Image Previews -->
+                            <div class="row mt-3" *ngIf="imagePreviewUrls.length > 0">
+                                <div class="col-md-3" *ngFor="let url of imagePreviewUrls; let i = index">
+                                    <div class="position-relative">
+                                        <img [src]="url" class="img-thumbnail" alt="Preview">
+                                        <button type="button"
+                                            class="btn btn-sm btn-danger position-absolute top-0 end-0"
+                                            (click)="removeImage(i)">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question Type Specific Fields -->
+                <!-- MCQ Options -->
+                <div class="card mb-4"
+                    *ngIf="questionForm.get('type')?.value === 'mcq_single' || questionForm.get('type')?.value === 'mcq_multiple'">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-list-check"></i> Answer Options</h5>
+                    </div>
+                    <div class="card-body">
+                        <div formArrayName="options">
+                            <div *ngFor="let option of options.controls; let i = index" [formGroupName]="i"
+                                class="mb-3">
+                                <div class="input-group">
+                                    <span class="input-group-text">{{ i + 1 }}</span>
+                                    <input type="text" class="form-control" formControlName="text"
+                                        placeholder="Enter option text">
+                                    <div class="input-group-text">
+                                        <input class="form-check-input mt-0" type="checkbox"
+                                            formControlName="isCorrect">
+                                        <label class="ms-2">Correct</label>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-danger" (click)="removeOption(i)"
+                                        [disabled]="options.length <= 2">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" (click)="addOption()">
+                            <i class="bi bi-plus-circle"></i> Add Option
+                        </button>
+                    </div>
+                </div>
+
+                <!-- True/False -->
+                <div class="card mb-4" *ngIf="questionForm.get('type')?.value === 'true_false'">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-check-circle"></i> Correct Answer</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" formControlName="correctAnswer" value="true"
+                                id="answerTrue">
+                            <label class="form-check-label" for="answerTrue">True</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" formControlName="correctAnswer" value="false"
+                                id="answerFalse">
+                            <label class="form-check-label" for="answerFalse">False</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fill in the Blank -->
+                <div class="card mb-4" *ngIf="questionForm.get('type')?.value === 'fill_blank'">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-dash-circle"></i> Blanks</h5>
+                    </div>
+                    <div class="card-body">
+                        <div formArrayName="blanks">
+                            <div *ngFor="let blank of blanks.controls; let i = index" [formGroupName]="i" class="mb-3">
+                                <label class="form-label">Blank {{ i + 1 }} - Correct Answer(s)</label>
+                                <input type="text" class="form-control"
+                                    placeholder="Enter correct answer (comma-separated for multiple)">
+                                <button type="button" class="btn btn-sm btn-outline-danger mt-2"
+                                    (click)="removeBlank(i)">
+                                    Remove Blank
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" (click)="addBlank()">
+                            <i class="bi bi-plus-circle"></i> Add Blank
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="col-lg-4">
+                <!-- Metadata Card -->
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-tags"></i> Metadata</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Marks <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" formControlName="marks" min="1">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Difficulty <span class="text-danger">*</span></label>
+                            <select class="form-select" formControlName="difficulty">
+                                <option *ngFor="let diff of difficulties" [value]="diff">
+                                    {{ diff.charAt(0).toUpperCase() + diff.slice(1) }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tags</label>
+                            <input type="text" class="form-control" formControlName="tags"
+                                placeholder="Enter tags separated by commas">
+                            <small class="text-muted">e.g., algebra, equations, basics</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hierarchy Card -->
+                <div class="card mb-4" formGroupName="hierarchy">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Hierarchy Mapping</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Grade <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" formControlName="grade"
+                                placeholder="e.g., Grade 10">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Subject <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" formControlName="subject"
+                                placeholder="e.g., Mathematics">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Topic <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" formControlName="topic" placeholder="e.g., Algebra">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Subtopic</label>
+                            <input type="text" class="form-control" formControlName="subtopic"
+                                placeholder="e.g., Linear Equations (optional)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary btn-lg" (click)="saveQuestion()"
+                        [disabled]="saving || questionForm.invalid">
+                        <i class="bi bi-save"></i> {{ saving ? 'Saving...' : 'Save Question' }}
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" (click)="cancel()" [disabled]="saving">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
