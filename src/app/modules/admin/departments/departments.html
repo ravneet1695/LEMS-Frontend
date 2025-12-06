@@ -1,0 +1,172 @@
+<div class="container-fluid">
+    <!-- Success/Error Messages -->
+    <div *ngIf="success" class="alert alert-success">
+        <i class="bi bi-check-circle-fill me-2"></i>{{ success }}
+    </div>
+    <div *ngIf="error" class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+    </div>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="bi bi-building"></i> Department Management</h2>
+        <button class="btn btn-primary" (click)="openDepartmentForm()">
+            <i class="bi bi-plus-circle"></i> Add Department
+        </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="Search departments..." [(ngModel)]="searchTerm"
+                        (keyup.enter)="onFilterChange()">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" [(ngModel)]="selectedOrganization" (change)="onFilterChange()">
+                        <option value="">All Organizations</option>
+                        <option *ngFor="let org of organizations" [value]="org._id">{{ org.name }}</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" [(ngModel)]="filterStatus" (change)="onFilterChange()">
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-outline-secondary w-100" (click)="clearFilters()"
+                        *ngIf="searchTerm || selectedOrganization || filterStatus !== 'all'">
+                        <i class="bi bi-x-circle"></i> Clear Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted">Loading departments...</p>
+    </div>
+
+    <!-- Departments Table -->
+    <div *ngIf="!loading" class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Display Name</th>
+                            <th>Internal Name</th>
+                            <th>Organization</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let dept of departments">
+                            <td><strong>{{ dept.displayName }}</strong></td>
+                            <td><code>{{ dept.name }}</code></td>
+                            <td>{{ dept.organization?.name || 'N/A' }}</td>
+                            <td>{{ dept.description || '-' }}</td>
+                            <td>
+                                <span class="badge" [ngClass]="dept.isActive ? 'bg-success' : 'bg-secondary'">
+                                    {{ dept.isActive ? 'Active' : 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" (click)="editDepartment(dept)" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn"
+                                        [ngClass]="dept.isActive ? 'btn-outline-warning' : 'btn-outline-success'"
+                                        (click)="toggleDepartmentStatus(dept)"
+                                        [title]="dept.isActive ? 'Deactivate' : 'Activate'">
+                                        <i [class]="dept.isActive ? 'bi bi-pause-circle' : 'bi bi-play-circle'"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" (click)="deleteDepartment(dept)"
+                                        title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr *ngIf="departments.length === 0">
+                            <td colspan="6" class="text-center py-4">
+                                <i class="bi bi-building" style="font-size: 3rem; opacity: 0.2;"></i>
+                                <p class="mt-2 text-muted">No departments found</p>
+                                <button class="btn btn-primary btn-sm" (click)="openDepartmentForm()">
+                                    <i class="bi bi-plus-circle"></i> Create First Department
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Department Form Modal -->
+<div class="modal fade" [class.show]="showDepartmentForm" [style.display]="showDepartmentForm ? 'block' : 'none'"
+    tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi" [ngClass]="isEditing ? 'bi-pencil-square' : 'bi-plus-circle'"></i>
+                    {{ isEditing ? 'Edit Department' : 'Add New Department' }}
+                </h5>
+                <button type="button" class="btn-close" (click)="closeDepartmentForm()"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-tag"></i> Display Name *</label>
+                        <input type="text" class="form-control" [(ngModel)]="departmentForm.displayName"
+                            name="displayName" required placeholder="e.g., Engineering Department">
+                        <small class="text-muted">User-friendly name shown in dropdowns</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-code"></i> Internal Name *</label>
+                        <input type="text" class="form-control" [(ngModel)]="departmentForm.name" name="name" required
+                            placeholder="e.g., engineering">
+                        <small class="text-muted">Lowercase, no spaces (used internally)</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-building"></i> Organization *</label>
+                        <select class="form-select" [(ngModel)]="departmentForm.organization" name="organization"
+                            required [disabled]="isEditing">
+                            <option value="">Select Organization</option>
+                            <option *ngFor="let org of organizations" [value]="org._id">{{ org.name }}</option>
+                        </select>
+                        <small class="text-muted" *ngIf="isEditing">Organization cannot be changed after
+                            creation</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-text-paragraph"></i> Description</label>
+                        <textarea class="form-control" [(ngModel)]="departmentForm.description" name="description"
+                            rows="3" placeholder="Optional description"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeDepartmentForm()">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" (click)="saveDepartment()">
+                    <i class="bi" [ngClass]="isEditing ? 'bi-check-circle' : 'bi-plus-circle'"></i>
+                    {{ isEditing ? 'Update' : 'Create' }} Department
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showDepartmentForm" *ngIf="showDepartmentForm"></div>

@@ -5,11 +5,11 @@ import { ForgotPasswordComponent } from './modules/auth/forgot-password/forgot-p
 import { ResetPasswordComponent } from './modules/auth/reset-password/reset-password.component';
 import { DashboardComponent } from './modules/dashboard/dashboard.component';
 import { OrganizationManagementComponent } from './modules/registration/organizations/organization-management.component';
-import { UserManagementComponent } from './modules/admin/users/user-management.component';
 import { GlobalSettingsComponent } from './modules/settings/global-settings.component';
-import { RoleConfigComponent } from './modules/role-config/role-config.component';
+import { RoleConfigComponent } from './modules/access-config/access-config.component';
 import { AuditLogsComponent } from './modules/audit-logs/audit-logs.component';
 import { OrganizationUsersComponent } from './modules/registration/organization-users/organization-users.component';
+import { OrganizationConfigComponent } from './modules/organization-config/organization-config.component';
 import { TestListComponent } from './modules/test-admin/test-list/test-list.component';
 import { TestCreatorComponent } from './modules/test-admin/test-creator/test-creator.component';
 import { TestPreviewComponent } from './modules/test-admin/test-preview/test-preview.component';
@@ -50,23 +50,23 @@ export const routes: Routes = [
                 canActivate: [RoleGuard],
                 data: { roles: ['super_admin'], breadcrumb: 'Global Settings' }
             },
-            // {
-            //     path: 'platform-roles',
-            //     component: PlatformRolesComponent,
-            //     canActivate: [RoleGuard],
-            //     data: { roles: ['super_admin'], breadcrumb: 'Platform Roles' }
-            // },
             {
-                path: 'role-config',
+                path: 'access-config',
                 component: RoleConfigComponent,
                 canActivate: [RoleGuard],
-                data: { roles: ['super_admin'], breadcrumb: 'Role Configuration' }
+                data: { roles: ['super_admin'], breadcrumb: 'Access Config' }
             },
             {
                 path: 'audit-logs',
                 component: AuditLogsComponent,
                 canActivate: [RoleGuard],
                 data: { roles: ['super_admin', 'org_admin'], breadcrumb: 'Audit Logs' }
+            },
+            {
+                path: 'admin/organization-config',
+                component: OrganizationConfigComponent,
+                canActivate: [RoleGuard],
+                data: { roles: ['super_admin', 'org_admin'], breadcrumb: 'Organization Config' }
             },
             {
                 path: 'register/organizations',
@@ -82,7 +82,7 @@ export const routes: Routes = [
             },
             {
                 path: 'register/organization-users',
-                component: UserManagementComponent,
+                component: OrganizationUsersComponent,
                 canActivate: [RoleGuard],
                 data: { roles: ['super_admin', 'org_admin'], breadcrumb: 'Organization Users' }
             },

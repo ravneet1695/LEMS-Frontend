@@ -65,7 +65,7 @@ export class SharedLayoutComponent implements OnInit, OnDestroy {
     }
 
     loadAllowedModules(): void {
-        this.http.get<any>(`${environment.apiUrl}/role-config/my-modules`).subscribe({
+        this.http.get<any>(`${environment.apiUrl}/access-config/my-modules`).subscribe({
             next: (res) => {
                 if (res.success) {
                     this.allowedModules = res.data.modules || [];

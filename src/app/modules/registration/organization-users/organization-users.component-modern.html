@@ -1,0 +1,186 @@
+<div class="organization-users-container">
+    <!-- Header Section -->
+    <div class="page-header">
+        <div class="header-content">
+            <div class="header-text">
+                <h1 class="page-title">
+                    <i class="bi bi-people-fill"></i>
+                    Organization Users
+                </h1>
+                <p class="page-subtitle">Manage and monitor user accounts across your organization</p>
+            </div>
+            <button class="btn-primary-modern" (click)="openUserForm()">
+                <i class="bi bi-person-plus-fill"></i>
+                <span>Add User</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div *ngIf="success" class="alert-modern alert-success">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>{{ success }}</span>
+    </div>
+    <div *ngIf="error" class="alert-modern alert-error">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>{{ error }}</span>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-card">
+        <div class="filters-wrapper">
+            <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Search by name or email..." [(ngModel)]="searchTerm"
+                    (keyup.enter)="onSearch()">
+            </div>
+
+            <div class="filters-group">
+                <!-- Organization filter (super_admin only) -->
+                <div *ngIf="currentUser?.role === 'super_admin'" class="filter-item">
+                    <select [(ngModel)]="selectedOrganization" (change)="onFilterChange()">
+                        <option value="">All Organizations</option>
+                        <option *ngFor="let org of organizations" [value]="org._id">{{ org.name }}</option>
+                    </select>
+                </div>
+
+                <div class="filter-item">
+                    <select [(ngModel)]="filterRole" (change)="onFilterChange()">
+                        <option value="">All Roles</option>
+                        <option *ngFor="let role of roles" [value]="role">{{ formatRole(role) }}</option>
+                    </select>
+                </div>
+
+                <div class="filter-item">
+                    <select [(ngModel)]="filterStatus" (change)="onFilterChange()">
+                        <option *ngFor="let status of statuses" [value]="status.value">{{ status.label }}</option>
+                    </select>
+                </div>
+
+                <button *ngIf="searchTerm || filterRole || filterStatus !== 'all' || selectedOrganization"
+                    class="btn-clear" (click)="clearFilters()">
+                    <i class="bi bi-x-circle"></i>
+                    Clear Filters
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar" *ngIf="!loading">
+            <div class="stat-item">
+                <span class="stat-label">Total Users</span>
+                <span class="stat-value">{{ totalUsers }}</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-label">Page</span>
+                <span class="stat-value">{{ currentPage }} of {{ totalPages }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading users...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && users.length === 0" class="empty-state">
+        <i class="bi bi-people"></i>
+        <h3>No users found</h3>
+        <p>Try adjusting your filters or add a new user to get started</p>
+        <button class="btn-primary-modern" (click)="openUserForm()">
+            <i class="bi bi-person-plus-fill"></i>
+            <span>Add First User</span>
+        </button>
+    </div>
+
+    <!-- Users Grid -->
+    <div *ngIf="!loading && users.length > 0" class="users-grid">
+        <div class="user-card" *ngFor="let user of users">
+            <div class="user-card-header">
+                <div class="user-avatar">
+                    <img *ngIf="user.profileImage" [src]="user.profileImage" [alt]="user.fullName">
+                    <div *ngIf="!user.profileImage" class="avatar-placeholder">
+                        {{ user.firstName?.charAt(0) }}{{ user.lastName?.charAt(0) }}
+                    </div>
+                </div>
+                <div class="user-info">
+                    <h3 class="user-name">{{ user.fullName }}</h3>
+                    <p class="user-email">{{ user.email }}</p>
+                </div>
+                <div class="user-status">
+                    <span class="status-badge" [class.active]="user.isActive" [class.inactive]="!user.isActive">
+                        {{ user.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="user-card-body">
+                <div class="user-detail">
+                    <i class="bi bi-briefcase-fill"></i>
+                    <span class="detail-label">Role:</span>
+                    <span class="detail-value role-badge">{{ formatRole(user.role) }}</span>
+                </div>
+
+                <div class="user-detail" *ngIf="user.organization">
+                    <i class="bi bi-building-fill"></i>
+                    <span class="detail-label">Organization:</span>
+                    <span class="detail-value">{{ user.organization.name }}</span>
+                </div>
+
+                <div class="user-detail" *ngIf="user.department">
+                    <i class="bi bi-diagram-3-fill"></i>
+                    <span class="detail-label">Department:</span>
+                    <span class="detail-value">{{ user.department.displayName || user.department.name }}</span>
+                </div>
+
+                <div class="user-detail" *ngIf="user.mobile">
+                    <i class="bi bi-phone-fill"></i>
+                    <span class="detail-label">Mobile:</span>
+                    <span class="detail-value">{{ user.mobile }}</span>
+                </div>
+            </div>
+
+            <div class="user-card-footer">
+                <button class="btn-icon" (click)="viewUser(user)" title="View Details">
+                    <i class="bi bi-eye-fill"></i>
+                </button>
+                <button class="btn-icon" (click)="editUser(user)" title="Edit User">
+                    <i class="bi bi-pencil-fill"></i>
+                </button>
+                <button class="btn-icon" (click)="toggleStatus(user)"
+                    [title]="user.isActive ? 'Deactivate' : 'Activate'">
+                    <i class="bi" [class.bi-toggle-on]="user.isActive" [class.bi-toggle-off]="!user.isActive"></i>
+                </button>
+                <button class="btn-icon danger" (click)="deleteUser(user)" title="Delete User">
+                    <i class="bi bi-trash-fill"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="!loading && totalPages > 1" class="pagination-modern">
+        <button class="page-btn" [disabled]="currentPage === 1" (click)="changePage(currentPage - 1)">
+            <i class="bi bi-chevron-left"></i>
+            Previous
+        </button>
+
+        <div class="page-numbers">
+            <button *ngFor="let page of getPageNumbers()" class="page-number" [class.active]="page === currentPage"
+                (click)="changePage(page)">
+                {{ page }}
+            </button>
+        </div>
+
+        <button class="page-btn" [disabled]="currentPage === totalPages" (click)="changePage(currentPage + 1)">
+            Next
+            <i class="bi bi-chevron-right"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Keep existing modals (user form, bulk upload, etc.) -->
+<!-- ... rest of the modals from original file ... -->

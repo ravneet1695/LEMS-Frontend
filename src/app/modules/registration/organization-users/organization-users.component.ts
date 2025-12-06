@@ -21,10 +21,14 @@ export class OrganizationUsersComponent implements OnInit {
     error = '';
     success = '';
 
+    // Current user info
+    currentUser: any = null;
+
     // Filters
     searchTerm = '';
     filterRole = '';
     filterStatus = 'all';
+    selectedOrganization = ''; // For super_admin to filter by organization
 
     // Pagination
     currentPage = 1;
@@ -33,7 +37,9 @@ export class OrganizationUsersComponent implements OnInit {
     totalUsers = 0;
 
     // Options
-    roles = ['super_admin', 'org_admin', 'content_creator', 'content_approver', 'manager', 'learner'];
+    roles = ['org_admin', 'content_creator', 'content_approver', 'manager', 'learner'];
+    organizations: any[] = []; // List of organizations for super_admin
+    departments: any[] = [];
     statuses = [
         { value: 'all', label: 'All Status' },
         { value: 'active', label: 'Active' },
@@ -49,8 +55,18 @@ export class OrganizationUsersComponent implements OnInit {
         email: '',
         password: '',
         role: 'learner',
-        organization: ''
+        organization: '',
+        mobile: '',
+        department: ''
     };
+    selectedProfileImage: File | null = null;
+    profileImagePreview: string | null = null;
+
+    // Bulk upload
+    showBulkUploadModal = false;
+    bulkUploadFile: File | null = null;
+    bulkUploadResults: any = null;
+    bulkUploadLoading = false;
 
     // Selected user for details
     selectedUser: any = null;
@@ -64,12 +80,42 @@ export class OrganizationUsersComponent implements OnInit {
     ) { }
 
     ngOnInit(): void {
-        // Get organization ID from route params
+        // Load current user info first
+        this.loadCurrentUser();
+
+        // Get organization ID from route params (optional)
         this.route.params.subscribe(params => {
             this.organizationId = params['id'];
             if (this.organizationId) {
                 this.loadOrganization();
-                this.loadUsers();
+            }
+            // Always load users (backend will filter based on user role and org)
+            this.loadUsers();
+        });
+    }
+
+    loadCurrentUser(): void {
+        this.http.get<any>(`${environment.apiUrl}/auth/me`).subscribe({
+            next: (res) => {
+                this.currentUser = res.data;
+                // Load organizations if super_admin
+                if (this.currentUser.role === 'super_admin') {
+                    this.loadOrganizations();
+                }
+            },
+            error: (err) => {
+                console.error('Error loading current user:', err);
+            }
+        });
+    }
+
+    loadOrganizations(): void {
+        this.http.get<any>(`${environment.apiUrl}/organizations`).subscribe({
+            next: (res) => {
+                this.organizations = res.data || [];
+            },
+            error: (err) => {
+                console.error('Error loading organizations:', err);
             }
         });
     }
@@ -78,6 +124,7 @@ export class OrganizationUsersComponent implements OnInit {
         this.http.get<any>(`${environment.apiUrl}/organizations/${this.organizationId}`).subscribe({
             next: (res) => {
                 this.organization = res.data;
+                this.loadDepartments(); // Load departments for this organization
             },
             error: (err) => {
                 this.error = 'Failed to load organization details';
@@ -86,13 +133,32 @@ export class OrganizationUsersComponent implements OnInit {
         });
     }
 
+    loadDepartments(): void {
+        this.http.get<any>(`${environment.apiUrl}/departments`, {
+            params: { organization: this.organizationId, status: 'active' }
+        }).subscribe({
+            next: (res) => {
+                this.departments = res.data || [];
+            },
+            error: (err) => {
+                console.error('Error loading departments:', err);
+            }
+        });
+    }
+
     loadUsers(): void {
         this.loading = true;
         const params: any = {
-            organization: this.organizationId,
             page: this.currentPage,
             limit: this.pageSize
         };
+
+        // Use selectedOrganization if set (for super_admin filtering)
+        // Otherwise use organizationId from route params
+        const orgFilter = this.selectedOrganization || this.organizationId;
+        if (orgFilter) {
+            params.organization = orgFilter;
+        }
 
         if (this.searchTerm) params.search = this.searchTerm;
         if (this.filterRole) params.role = this.filterRole;
@@ -127,6 +193,7 @@ export class OrganizationUsersComponent implements OnInit {
         this.searchTerm = '';
         this.filterRole = '';
         this.filterStatus = 'all';
+        this.selectedOrganization = '';
         this.currentPage = 1;
         this.loadUsers();
     }
@@ -159,7 +226,9 @@ export class OrganizationUsersComponent implements OnInit {
             email: '',
             password: '',
             role: 'learner',
-            organization: this.organizationId
+            organization: this.organizationId,
+            mobile: '',
+            department: ''
         };
         this.showUserForm = true;
     }
@@ -172,7 +241,9 @@ export class OrganizationUsersComponent implements OnInit {
             email: user.email,
             password: '',
             role: user.role,
-            organization: this.organizationId
+            organization: this.organizationId,
+            mobile: user.mobile || '',
+            department: user.department?._id || ''
         };
         this.selectedUser = user;
         this.showUserForm = true;
@@ -185,7 +256,9 @@ export class OrganizationUsersComponent implements OnInit {
                 firstName: this.userForm.firstName,
                 lastName: this.userForm.lastName,
                 email: this.userForm.email,
-                role: this.userForm.role
+                role: this.userForm.role,
+                mobile: this.userForm.mobile || null,
+                department: this.userForm.department || null
             };
 
             if (this.userForm.password) {
@@ -205,8 +278,14 @@ export class OrganizationUsersComponent implements OnInit {
                 }
             });
         } else {
-            // Create new user
-            this.http.post(`${environment.apiUrl}/users`, this.userForm).subscribe({
+            // Create new user - send entire userForm
+            const createData = {
+                ...this.userForm,
+                mobile: this.userForm.mobile || null,
+                department: this.userForm.department || null
+            };
+
+            this.http.post(`${environment.apiUrl}/users`, createData).subscribe({
                 next: () => {
                     this.success = 'User created successfully';
                     this.closeUserForm();
@@ -225,6 +304,26 @@ export class OrganizationUsersComponent implements OnInit {
         this.showUserForm = false;
         this.isEditing = false;
         this.selectedUser = null;
+    }
+
+    onOrganizationChange(): void {
+        // Load departments for the selected organization
+        if (this.userForm.organization) {
+            this.http.get<any>(`${environment.apiUrl}/departments`, {
+                params: { organization: this.userForm.organization, status: 'active' }
+            }).subscribe({
+                next: (res) => {
+                    this.departments = res.data || [];
+                },
+                error: (err) => {
+                    console.error('Error loading departments:', err);
+                    this.departments = [];
+                }
+            });
+        } else {
+            this.departments = [];
+            this.userForm.department = '';
+        }
     }
 
     viewUser(user: any): void {

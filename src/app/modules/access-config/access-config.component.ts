@@ -30,11 +30,11 @@ interface Role {
 }
 
 @Component({
-    selector: 'app-role-config',
+    selector: 'app-access-config',
     standalone: true,
     imports: [CommonModule, FormsModule],
-    templateUrl: './role-config.component.html',
-    styleUrls: ['./role-config.component.css']
+    templateUrl: './access-config.component.html',
+    styleUrls: ['./access-config.component.css']
 })
 export class RoleConfigComponent implements OnInit {
     roles: Role[] = [];
@@ -87,7 +87,7 @@ export class RoleConfigComponent implements OnInit {
     }
 
     loadModules(): void {
-        this.http.get<any>(`${environment.apiUrl}/role-config/modules`).subscribe({
+        this.http.get<any>(`${environment.apiUrl}/access-config/modules`).subscribe({
             next: (response) => {
                 console.log("2", response);
                 if (response.success) {
@@ -115,7 +115,7 @@ export class RoleConfigComponent implements OnInit {
         console.log('[loadRoles] Loading roles with params:', params);
         console.log('[loadRoles] Selected organization:', this.selectedOrganization);
 
-        this.http.get<any>(`${environment.apiUrl}/role-config${params}`).subscribe({
+        this.http.get<any>(`${environment.apiUrl}/access-config${params}`).subscribe({
             next: (response) => {
                 console.log('[loadRoles] Response:', response);
 
@@ -243,7 +243,7 @@ export class RoleConfigComponent implements OnInit {
             console.log('[autoSaveModuleAccess] Final payload:', JSON.stringify(payload, null, 2));
 
             this.http.patch<any>(
-                `${environment.apiUrl}/role-config/${this.selectedRole!.name}/module-access`,
+                `${environment.apiUrl}/access-config/${this.selectedRole!.name}/module-access`,
                 payload
             ).subscribe({
                 next: (response) => {
@@ -289,7 +289,7 @@ export class RoleConfigComponent implements OnInit {
             moduleAccess: this.selectedRole.moduleAccess
         };
 
-        this.http.post<any>(`${environment.apiUrl}/role-config`, payload).subscribe({
+        this.http.post<any>(`${environment.apiUrl}/access-config`, payload).subscribe({
             next: (response) => {
                 if (response.success) {
                     const roleIndex = this.roles.findIndex(r => r.id === this.selectedRole!.id);

@@ -1,0 +1,124 @@
+<div class="organization-config-container">
+    <!-- Header -->
+    <div class="config-header">
+        <h2><i class="bi bi-sliders"></i> Organization Configuration</h2>
+        <p class="text-muted">Customize settings for your organization</p>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div *ngIf="loading" class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div *ngIf="saveMessage" class="alert"
+        [ngClass]="{'alert-success': saveMessageType === 'success', 'alert-danger': saveMessageType === 'error'}"
+        role="alert">
+        <i class="bi"
+            [ngClass]="{'bi-check-circle': saveMessageType === 'success', 'bi-exclamation-triangle': saveMessageType === 'error'}"></i>
+        {{ saveMessage }}
+    </div>
+
+    <!-- Unsaved Changes Warning -->
+    <div *ngIf="hasUnsavedChanges" class="alert alert-warning" role="alert">
+        <i class="bi bi-exclamation-triangle"></i>
+        You have unsaved changes. Please save or discard them.
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons mb-3">
+        <button class="btn btn-primary" (click)="saveAllChanges()" [disabled]="!hasUnsavedChanges || loading">
+            <i class="bi bi-save"></i> Save All Changes
+        </button>
+        <button class="btn btn-secondary" (click)="discardChanges()" [disabled]="!hasUnsavedChanges || loading">
+            <i class="bi bi-x-circle"></i> Discard Changes
+        </button>
+        <button class="btn btn-danger" (click)="resetAllToDefaults()" [disabled]="loading">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset All to Defaults
+        </button>
+    </div>
+
+    <!-- Category Tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item" *ngFor="let category of categories">
+            <a class="nav-link" [class.active]="activeCategory === category" (click)="setActiveCategory(category)"
+                style="cursor: pointer;">
+                <i class="bi" [ngClass]="{
+                    'bi-gear': category === 'general',
+                    'bi-clipboard-check': category === 'testing',
+                    'bi-bell': category === 'notifications',
+                    'bi-palette': category === 'branding'
+                }"></i>
+                {{ category | titlecase }}
+            </a>
+        </li>
+    </ul>
+
+    <!-- Config Items -->
+    <div class="config-content" *ngIf="!loading">
+        <div class="config-category" *ngIf="configs[activeCategory]">
+            <div class="config-item" *ngFor="let key of getConfigKeys(activeCategory)">
+                <div class="config-item-header">
+                    <div class="config-label">
+                        <label [for]="key">{{ formatLabel(key) }}</label>
+                        <span class="badge bg-info ms-2" *ngIf="configs[activeCategory][key].isCustomized">Custom</span>
+                        <span class="badge bg-warning ms-2" *ngIf="isModified(key)">Modified</span>
+                    </div>
+                    <div class="config-actions">
+                        <button class="btn btn-sm btn-outline-primary" (click)="saveConfig(key, activeCategory)"
+                            [disabled]="!isModified(key)">
+                            <i class="bi bi-save"></i> Save
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" (click)="resetToDefault(key, activeCategory)"
+                            [disabled]="!configs[activeCategory][key].isCustomized">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </button>
+                    </div>
+                </div>
+
+                <p class="config-description">{{ configs[activeCategory][key].description }}</p>
+
+                <div class="config-input">
+                    <!-- String Input -->
+                    <input *ngIf="configs[activeCategory][key].dataType === 'string' && !key.includes('Color')"
+                        type="text" class="form-control" [id]="key"
+                        [(ngModel)]="configs[activeCategory][key].currentValue" (ngModelChange)="onConfigChange(key)">
+
+                    <!-- Color Picker -->
+                    <div *ngIf="configs[activeCategory][key].dataType === 'string' && key.includes('Color')"
+                        class="color-picker-container">
+                        <input type="color" class="form-control form-control-color" [id]="key"
+                            [(ngModel)]="configs[activeCategory][key].currentValue"
+                            (ngModelChange)="onConfigChange(key)">
+                        <input type="text" class="form-control ms-2"
+                            [(ngModel)]="configs[activeCategory][key].currentValue"
+                            (ngModelChange)="onConfigChange(key)" placeholder="#000000">
+                    </div>
+
+                    <!-- Number Input -->
+                    <input *ngIf="configs[activeCategory][key].dataType === 'number'" type="number" class="form-control"
+                        [id]="key" [(ngModel)]="configs[activeCategory][key].currentValue"
+                        (ngModelChange)="onConfigChange(key)">
+
+                    <!-- Boolean Toggle -->
+                    <div *ngIf="configs[activeCategory][key].dataType === 'boolean'" class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" [id]="key"
+                            [(ngModel)]="configs[activeCategory][key].currentValue"
+                            (ngModelChange)="onConfigChange(key)">
+                        <label class="form-check-label" [for]="key">
+                            {{ configs[activeCategory][key].currentValue ? 'Enabled' : 'Disabled' }}
+                        </label>
+                    </div>
+                </div>
+
+                <div class="config-default-value" *ngIf="configs[activeCategory][key].isCustomized">
+                    <small class="text-muted">
+                        Default: <code>{{ configs[activeCategory][key].defaultValue }}</code>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
