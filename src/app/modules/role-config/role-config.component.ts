@@ -22,6 +22,11 @@ interface Role {
         name: string;
     };
     isSystemRole?: boolean;
+    isDeletable?: boolean;
+    isDefault?: boolean;
+    canManageOrganizations?: boolean;
+    canManageSettings?: boolean;
+    canManageRoles?: boolean;
 }
 
 @Component({
@@ -42,7 +47,7 @@ export class RoleConfigComponent implements OnInit {
     showDeleteModal = false;
     roleToDelete: Role | null = null;
     organizations: any[] = [];
-    selectedOrganization: string | null = null;
+    selectedOrganization: string | undefined = undefined;
     private autoSaveTimer: any = null;  // Timer for debouncing
     newRole: Role = {
         id: '',
@@ -75,8 +80,10 @@ export class RoleConfigComponent implements OnInit {
     }
 
     onOrganizationChange(): void {
-        this.loadRoles();
+        console.log('[onOrganizationChange] Organization changed to:', this.selectedOrganization);
         this.selectedRole = null;
+        this.saveMessage = '';
+        this.loadRoles();
     }
 
     loadModules(): void {
@@ -98,30 +105,82 @@ export class RoleConfigComponent implements OnInit {
 
     loadRoles(): void {
         this.loading = true;
-        const params = this.selectedOrganization ? `?organizationId=${this.selectedOrganization}` : '';
-        console.log("params", params);
+        this.saveMessage = '';
+
+        // Construct query parameters
+        const params = this.selectedOrganization
+            ? `?organizationId=${this.selectedOrganization}`
+            : '';
+
+        console.log('[loadRoles] Loading roles with params:', params);
+        console.log('[loadRoles] Selected organization:', this.selectedOrganization);
+
         this.http.get<any>(`${environment.apiUrl}/role-config${params}`).subscribe({
             next: (response) => {
-                console.log("3", response);
-                if (response.success) {
-                    this.roles = response.data.map((config: any) => ({
-                        id: config.roleName,
-                        name: config.roleName,
-                        displayName: config.displayName,
-                        description: config.description,
-                        moduleAccess: config.moduleAccess,
-                        organization: config.organization,
-                        isSystemRole: config.isSystemRole
-                    }));
+                console.log('[loadRoles] Response:', response);
+
+                if (response.success && response.data) {
+                    // Map the role configurations to the frontend Role interface
+                    this.roles = response.data.map((config: any) => {
+                        const role: Role = {
+                            id: config._id, // Use MongoDB _id as the unique identifier
+                            name: config.roleName,
+                            displayName: config.displayName,
+                            description: config.description || '',
+                            moduleAccess: config.moduleAccess || [],
+                            organization: config.organization,
+                            isSystemRole: config.isSystemRole,
+                            isDeletable: config.isDeletable,
+                            isDefault: config.isDefault,
+                            canManageOrganizations: config.canManageOrganizations,
+                            canManageSettings: config.canManageSettings,
+                            canManageRoles: config.canManageRoles
+                        };
+                        return role;
+                    });
+
+                    console.log('[loadRoles] Loaded', this.roles.length, 'roles');
+
+                    // If we had a selected role, try to re-select it
+                    if (this.selectedRole) {
+                        const stillExists = this.roles.find(r => r.id === this.selectedRole!.id);
+                        if (!stillExists) {
+                            this.selectedRole = null;
+                        }
+                    }
+                } else {
+                    console.warn('[loadRoles] Unexpected response format:', response);
+                    this.roles = [];
+                    this.saveMessage = 'Unexpected response format from server';
+                    this.saveMessageType = 'error';
                 }
+
                 this.loading = false;
             },
             error: (error) => {
-                console.error('Error loading roles:', error);
+                console.error('[loadRoles] Error:', error);
                 this.roles = [];
                 this.loading = false;
-                this.saveMessage = 'Failed to load roles. Please check your connection and try again.';
+
+                // Provide user-friendly error messages
+                if (error.status === 0) {
+                    this.saveMessage = 'Cannot connect to server. Please check if the backend is running.';
+                } else if (error.status === 401) {
+                    this.saveMessage = 'Session expired. Please log in again.';
+                } else if (error.status === 403) {
+                    this.saveMessage = 'Access denied. You do not have permission to view role configurations.';
+                } else if (error.error?.message) {
+                    this.saveMessage = error.error.message;
+                } else {
+                    this.saveMessage = 'Failed to load roles. Please try again.';
+                }
+
                 this.saveMessageType = 'error';
+
+                // Auto-clear error message after 5 seconds
+                setTimeout(() => {
+                    this.saveMessage = '';
+                }, 5000);
             }
         });
     }
@@ -136,14 +195,18 @@ export class RoleConfigComponent implements OnInit {
     }
 
     toggleModuleAccess(moduleId: string): void {
+        console.log("moduleId", moduleId);
         if (!this.selectedRole) return;
 
         const index = this.selectedRole.moduleAccess.indexOf(moduleId);
+        console.log("index", index);
+
         if (index > -1) {
             this.selectedRole.moduleAccess.splice(index, 1);
         } else {
             this.selectedRole.moduleAccess.push(moduleId);
         }
+        console.log("this.selectedRole", this.selectedRole);
 
         // Auto-save the module access changes
         this.autoSaveModuleAccess();
@@ -159,10 +222,25 @@ export class RoleConfigComponent implements OnInit {
 
         // Debounce: wait 500ms before saving
         this.autoSaveTimer = setTimeout(() => {
-            // Use the new PATCH endpoint for module access updates
-            const payload = {
+            console.log('[autoSaveModuleAccess] selectedOrganization:', this.selectedOrganization);
+            console.log('[autoSaveModuleAccess] selectedOrganization type:', typeof this.selectedOrganization);
+            console.log('[autoSaveModuleAccess] selectedRole:', this.selectedRole);
+
+            // Prepare payload with moduleAccess and organizationId (if selected)
+            const payload: any = {
                 moduleAccess: this.selectedRole!.moduleAccess
             };
+
+            // Include organizationId if an organization is selected
+            // Make sure it's not null, undefined, or the string 'null'
+            if (this.selectedOrganization && this.selectedOrganization !== 'null') {
+                payload.organizationId = this.selectedOrganization;
+                console.log('[autoSaveModuleAccess] Including organizationId:', payload.organizationId);
+            } else {
+                console.log('[autoSaveModuleAccess] No organization selected, updating global config');
+            }
+
+            console.log('[autoSaveModuleAccess] Final payload:', JSON.stringify(payload, null, 2));
 
             this.http.patch<any>(
                 `${environment.apiUrl}/role-config/${this.selectedRole!.name}/module-access`,
@@ -246,7 +324,12 @@ export class RoleConfigComponent implements OnInit {
     }
 
     isSystemRole(role: Role): boolean {
-        // Check if it's marked as system role or is one of the core system roles
-        return role.isSystemRole || ['super_admin', 'org_admin', 'learner'].includes(role.name);
+        // Fully database-driven check - no hardcoded role names
+        return role.isSystemRole === true;
+    }
+
+    isDeletableRole(role: Role): boolean {
+        // Check if role is deletable from database
+        return role.isDeletable !== false;
     }
 }

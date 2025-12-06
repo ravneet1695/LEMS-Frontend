@@ -11,7 +11,7 @@
             <label for="orgFilter">Filter by Organization:</label>
             <select id="orgFilter" class="form-select" [(ngModel)]="selectedOrganization"
                 (change)="onOrganizationChange()">
-                <option [value]="null">All Organizations (Global Roles)</option>
+                <option [ngValue]="undefined">All Organizations (Global Roles)</option>
                 <option *ngFor="let org of organizations" [value]="org._id">{{ org.name }}</option>
             </select>
         </div>
@@ -85,7 +85,7 @@
                     <h3 class="section-title">Module Access Permissions</h3>
                     <div class="modules-grid">
                         <div *ngFor="let module of modules" class="module-card"
-                            [class.active]="hasModuleAccess(module.id)" (click)="toggleModuleAccess(module.id)">
+                            [class.active]="hasModuleAccess(module.id)">
                             <div class="module-header">
                                 <div class="module-icon">
                                     <i class="bi" [ngClass]="module.icon"></i>
@@ -93,7 +93,7 @@
                                 <div class="module-toggle">
                                     <label class="switch">
                                         <input type="checkbox" [checked]="hasModuleAccess(module.id)"
-                                            (click)="$event.stopPropagation()" (change)="toggleModuleAccess(module.id)">
+                                            (change)="toggleModuleAccess(module.id)">
                                         <span class="slider"></span>
                                     </label>
                                 </div>
